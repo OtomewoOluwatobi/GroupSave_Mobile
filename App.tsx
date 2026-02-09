@@ -5,12 +5,14 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import Toast, { BaseToast, BaseToastProps, ErrorToast } from 'react-native-toast-message';
 import { AlertNotificationRoot } from 'react-native-alert-notification';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import HomeScreen from './screens/HomeScreen';
 import SigninScreen from './screens/SigninScreen';
 import SignupScreen from './screens/SignupScreen';
 import DashboardScreen from './screens/auth/user/DashboardScreen';
 import CreateGroupScreen from './screens/auth/user/groups/CreateGroupScreen';
+import GroupDetailsScreen from './screens/auth/user/groups/GroupDetailsScreen';
 
 type RootStackParamList = {
   Home: undefined;
@@ -18,6 +20,7 @@ type RootStackParamList = {
   Signup: undefined;
   Dashboard: undefined;
   CreateGroup: undefined;
+  GroupDetails: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -63,31 +66,40 @@ export default function App() {
   }
 
   return (
-    <AlertNotificationRoot>
-      <View style={{ flex: 1 }}>
-        <StatusBar barStyle="light-content" />
-        <NavigationContainer>
-          <Stack.Navigator
-            screenOptions={{ headerShown: false }}
-            initialRouteName="Dashboard"
-          >
-            <Stack.Screen name="Home" component={HomeScreen} />
-            <Stack.Screen name="Signin" component={SigninScreen} />
-            <Stack.Screen name="Signup" component={SignupScreen} />
-            <Stack.Screen
-              name="Dashboard"
-              component={DashboardScreen}
-              options={{ gestureEnabled: false }}
-            />
-            <Stack.Screen
-              name="CreateGroup"
-              component={CreateGroupScreen}
-              options={{ gestureEnabled: false }}
-            />
-          </Stack.Navigator>
-        </NavigationContainer>
-        <Toast config={toastConfig} />
-      </View>
-    </AlertNotificationRoot>
+    <SafeAreaProvider>
+      <AlertNotificationRoot>
+        <View style={{ flex: 1 }}>
+          <StatusBar barStyle="light-content" />
+          <NavigationContainer>
+            <Stack.Navigator
+              screenOptions={{ headerShown: false }}
+              initialRouteName="Dashboard"
+            >
+              <Stack.Screen name="Home" component={HomeScreen} />
+              <Stack.Screen name="Signin" component={SigninScreen} />
+              <Stack.Screen name="Signup" component={SignupScreen} />
+              <Stack.Screen
+                name="Dashboard"
+                component={DashboardScreen}
+                options={{ gestureEnabled: false }}
+              />
+              <Stack.Screen
+                name="CreateGroup"
+                component={CreateGroupScreen}
+                options={{ gestureEnabled: false }}
+              />
+              <Stack.Screen
+                name="GroupDetails"
+                component={GroupDetailsScreen}
+                options={{
+                  headerShown: false
+                }}
+              />
+            </Stack.Navigator>
+          </NavigationContainer>
+          <Toast config={toastConfig} />
+        </View>
+      </AlertNotificationRoot>
+    </SafeAreaProvider>
   );
 }

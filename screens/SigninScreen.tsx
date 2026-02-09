@@ -47,7 +47,7 @@ const SigninScreen: React.FC = () => {
         };
         // Make API call to sign in
         try {
-            const apiUrl = "https://groupsave-main-7jvzme.laravel.cloud/api";
+            const apiUrl = "https://groupsave-main-cq3iad.laravel.cloud/api";
             interface SigninResponse {
                 token: string;
                 user: any;

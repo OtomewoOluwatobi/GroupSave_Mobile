@@ -25,6 +25,9 @@ type RootStackParamList = {
     Signup: undefined;
     Dashboard: undefined;
     CreateGroup: undefined;
+    GroupDetails: {
+        group_id: number
+    };
 };
 
 const DashboardScreen: React.FC = () => {
@@ -55,7 +58,7 @@ const DashboardScreen: React.FC = () => {
                 const token = await AsyncStorage.getItem("token");
                 const config = {
                     method: "get",
-                    url: "https://groupsave-main-7jvzme.laravel.cloud/api/user/dashboard",
+                    url: "https://groupsave-main-cq3iad.laravel.cloud/api/user/dashboard",
                     headers: {
                         Accept: "application/json",
                         Authorization: `Bearer ${token}`,
@@ -116,7 +119,13 @@ const DashboardScreen: React.FC = () => {
 
     // Render a card for each group in which the user is a member
     const renderMyGroupCard = useCallback((group: any) => (
-        <TouchableOpacity key={group.id} style={[styles.groupCard, shadowStyles]}>
+        <TouchableOpacity 
+            key={group.id} 
+            style={[styles.groupCard, shadowStyles]}
+            onPress={() => navigation.navigate('GroupDetails', {
+                group_id: group.group.id // Make sure this matches your group structure
+            })}
+        >
             <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <Text style={styles.groupTitle}>{group.group.title}</Text>
                 <View style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center" }}>
@@ -149,7 +158,7 @@ const DashboardScreen: React.FC = () => {
                 </View>
             </View>
         </TouchableOpacity>
-    ), []);
+    ), [navigation]);
 
     return (
         <SafeAreaProvider>

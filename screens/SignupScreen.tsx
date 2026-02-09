@@ -54,7 +54,7 @@ function SignupScreen() {
             password_confirmation: values.password_confirmation
         }; 
         // Make API call to sign up
-        const apiUrl = "https://groupsave-main-7jvzme.laravel.cloud/api";
+        const apiUrl = "https://groupsave-main-cq3iad.laravel.cloud/api";
 
         axios.post<{ message: string }>(`${apiUrl}/auth/register`, userData)
             .then(response => {
