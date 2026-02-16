@@ -21,7 +21,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ALERT_TYPE, Dialog } from "react-native-alert-notification";
 
 import FormInput from "../../../../components/FormInput";
-import { Config } from "react-native-config";
+import Constants from 'expo-constants';
 
 interface GroupFormValues {
     title: string;
@@ -126,7 +126,7 @@ const CreateGroupScreen = () => {
 
         try {
             setSubmitting(true);
-            const apiUrl = Config.API_URL;
+            const apiUrl = Constants.manifest?.extra?.API_URL;
             const token = await AsyncStorage.getItem("token");
 
             if (!token) {

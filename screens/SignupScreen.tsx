@@ -15,7 +15,7 @@ import { ALERT_TYPE, Dialog } from 'react-native-alert-notification';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Formik } from 'formik';
-import Config from 'react-native-config';
+import Constants from 'expo-constants';
 
 type RootStackParamList = {
     Signin: undefined;
@@ -55,7 +55,7 @@ function SignupScreen() {
             password_confirmation: values.password_confirmation
         }; 
         // Make API call to sign up
-        const apiUrl = Config.API_URL;
+        const apiUrl = Constants.expoConfig?.extra?.apiUrl || "";
 
         axios.post<{ message: string }>(`${apiUrl}/auth/register`, userData)
             .then(response => {

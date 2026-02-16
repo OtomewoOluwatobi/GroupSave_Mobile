@@ -18,9 +18,9 @@ import { Formik } from 'formik';
 import * as Yup from 'yup';
 import Toast from 'react-native-toast-message';
 import { ALERT_TYPE, Dialog } from 'react-native-alert-notification';
+import Constants from 'expo-constants';
 
 import FormInput from '../components/FormInput';
-import { Config } from 'react-native-config';
 
 
 type RootStackParamList = {
@@ -48,7 +48,7 @@ const SigninScreen: React.FC = () => {
         };
         // Make API call to sign in
         try {
-            const apiUrl =  Config.API_URL;;
+            const apiUrl =  Constants.manifest?.extra?.API_URL;
             interface SigninResponse {
                 token: string;
                 user: any;

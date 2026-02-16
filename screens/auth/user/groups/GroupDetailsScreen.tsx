@@ -12,7 +12,7 @@ import { useRoute, RouteProp, useNavigation, NavigationProp } from '@react-navig
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { Config } from 'react-native-config';
+import Constants from 'expo-constants';
 
 // Define the Group types
 interface GroupUser {
@@ -68,7 +68,7 @@ const GroupDetailsScreen = () => {
                 }
 
                 const response = await axios.get<{ data: Group }>(
-                    `${Config.API_URL}/user/group/${group_id}`,
+                    `${Constants.manifest?.extra?.API_URL}/user/group/${group_id}`,
                     {
                         headers: {
                             'Authorization': `Bearer ${token}`,
