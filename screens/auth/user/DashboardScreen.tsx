@@ -18,6 +18,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import axios from "axios";
 import MenuActionSheet from "../../../components/MenuActionSheet";
+import { Config } from "react-native-config";
 
 type RootStackParamList = {
     Home: undefined;
@@ -58,7 +59,7 @@ const DashboardScreen: React.FC = () => {
                 const token = await AsyncStorage.getItem("token");
                 const config = {
                     method: "get",
-                    url: "https://groupsave-main-cq3iad.laravel.cloud/api/user/dashboard",
+                    url: `${Config.API_URL}/user/dashboard`,
                     headers: {
                         Accept: "application/json",
                         Authorization: `Bearer ${token}`,

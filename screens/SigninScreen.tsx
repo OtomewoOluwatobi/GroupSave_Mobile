@@ -20,6 +20,7 @@ import Toast from 'react-native-toast-message';
 import { ALERT_TYPE, Dialog } from 'react-native-alert-notification';
 
 import FormInput from '../components/FormInput';
+import { Config } from 'react-native-config';
 
 
 type RootStackParamList = {
@@ -47,7 +48,7 @@ const SigninScreen: React.FC = () => {
         };
         // Make API call to sign in
         try {
-            const apiUrl = "https://groupsave-main-cq3iad.laravel.cloud/api";
+            const apiUrl =  Config.API_URL;;
             interface SigninResponse {
                 token: string;
                 user: any;

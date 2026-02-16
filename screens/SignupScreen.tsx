@@ -15,6 +15,7 @@ import { ALERT_TYPE, Dialog } from 'react-native-alert-notification';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Formik } from 'formik';
+import Config from 'react-native-config';
 
 type RootStackParamList = {
     Signin: undefined;
@@ -54,7 +55,7 @@ function SignupScreen() {
             password_confirmation: values.password_confirmation
         }; 
         // Make API call to sign up
-        const apiUrl = "https://groupsave-main-cq3iad.laravel.cloud/api";
+        const apiUrl = Config.API_URL;
 
         axios.post<{ message: string }>(`${apiUrl}/auth/register`, userData)
             .then(response => {
