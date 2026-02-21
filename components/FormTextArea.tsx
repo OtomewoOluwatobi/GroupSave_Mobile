@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { semanticColors } from '../theme/semanticColors';
 
 interface FormTextAreaProps {
   field: string;
@@ -34,7 +35,7 @@ const FormTextArea: React.FC<FormTextAreaProps> = ({
           showError && styles.textAreaError
         ]}
         placeholder={placeholder}
-        placeholderTextColor="#999"
+        placeholderTextColor={semanticColors.inputPlaceholder}
         value={value}
         onChangeText={handleChange}
         multiline
@@ -55,20 +56,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   textArea: {
-    backgroundColor: '#fff',
+    backgroundColor: semanticColors.inputBackground,
     paddingHorizontal: 15,
     paddingVertical: 12,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: semanticColors.inputBorder,
     minHeight: 100,
     marginVertical: 10,
+    color: semanticColors.inputText,
   },
   textAreaError: {
-    borderColor: '#ff3b30',
+    borderColor: semanticColors.textError,
   },
   errorText: {
-    color: '#ff3b30',
+    color: semanticColors.textError,
     fontSize: 12,
     marginTop: 4,
     marginLeft: 4,

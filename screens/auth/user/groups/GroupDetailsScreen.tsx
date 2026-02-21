@@ -13,6 +13,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Constants from 'expo-constants';
+import { semanticColors } from '../../../../theme/semanticColors';
 
 // Define the Group types
 interface GroupUser {
@@ -191,11 +192,11 @@ const formatCurrency = (amount: number) =>
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#e8f3f5',
+        backgroundColor: semanticColors.pageBg,
     },
     header: {
         padding: 20,
-        backgroundColor: '#fff',
+        backgroundColor: semanticColors.containerBackground,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -203,18 +204,18 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#333',
+        color: semanticColors.textHeading,
     },
     statusBadge: {
         paddingHorizontal: 12,
         paddingVertical: 6,
     },
     statusText: {
-        color: '#fff',
+        color: semanticColors.buttonPrimaryText,
         fontWeight: '600',
     },
     detailsContainer: {
-        backgroundColor: '#fff',
+        backgroundColor: semanticColors.containerBackground,
         marginVertical: 10,
         marginHorizontal: 20,
         padding: 20,
@@ -225,7 +226,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 15,
         borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        borderBottomColor: semanticColors.divider,
     },
     detailRowLast: {
         borderBottomWidth: 0,
@@ -233,46 +234,47 @@ const styles = StyleSheet.create({
     },
     label: {
         fontSize: 16,
-        color: '#666',
+        color: semanticColors.textDescription,
     },
     value: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#333',
+        color: semanticColors.textHeading,
     },
     userSection: {
         marginVertical: 5,
         marginHorizontal: 20,
         padding: 20,
-        backgroundColor: '#fff',
+        backgroundColor: semanticColors.containerBackground,
     },
     sectionTitle: {
         fontSize: 20,
         fontWeight: 'bold',
         marginBottom: 10,
+        color: semanticColors.textHeading,
     },
     userContainer: {
         borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        borderBottomColor: semanticColors.divider,
         paddingVertical: 10,
     },
     userName: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#333',
+        color: semanticColors.textHeading,
     },
     userText: {
         fontSize: 16,
-        color: '#333'
+        color: semanticColors.textHeading
     },
     userDetail: {
         fontSize: 16,
-        color: '#333',
+        color: semanticColors.textHeading,
     },
     userCard: {
-        backgroundColor: '#f9f9f9',
+        backgroundColor: semanticColors.sectionBg,
         borderWidth: 1,
-        borderColor: '#eee',
+        borderColor: semanticColors.divider,
         borderRadius: 5,
         padding: 10,
         marginRight: 10,
@@ -281,11 +283,11 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 30,
         fontSize: 18,
-        color: '#555',
+        color: semanticColors.textBody,
     },
     noUsersText: {
         fontSize: 16,
-        color: '#999',
+        color: semanticColors.textPlaceholder,
         fontStyle: 'italic',
         marginTop: 10,
     },

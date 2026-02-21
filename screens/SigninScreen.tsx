@@ -21,6 +21,7 @@ import { ALERT_TYPE, Dialog } from 'react-native-alert-notification';
 import Constants from 'expo-constants';
 
 import FormInput from '../components/FormInput';
+import { semanticColors } from '../theme/semanticColors';
 
 
 type RootStackParamList = {
@@ -75,8 +76,6 @@ const SigninScreen: React.FC = () => {
                 });
             }
         } catch (error: any) {
-            console.error('Sign in error:', error.response?.data);
-
             // Handle different error scenarios
             if ((error as any).isAxiosError) {
                 const errorMessage = error.response?.data?.message
@@ -203,7 +202,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: '#014131',
+        backgroundColor: semanticColors.buttonPrimary,
     },
     formContainer: {
         width: '100%',
@@ -218,30 +217,30 @@ const styles = StyleSheet.create({
         fontSize: 32,
         fontWeight: 'bold',
         marginBottom: 20,
-        color: '#ffffff',
+        color: semanticColors.buttonPrimaryText,
     },
     container2: {
         width: '100%',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#ffffff',
+        backgroundColor: semanticColors.containerBackground,
         padding: 30,
         borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
         borderWidth: 1,
-        borderColor: '#ddd',
+        borderColor: semanticColors.containerBorder,
     },
     title: {
         fontSize: 18,
         marginVertical: 10,
         fontWeight: 'bold',
-        color: '#25292e',
+        color: semanticColors.textHeading,
     },
     titleAlign: {
         alignSelf: 'flex-start',
     },
     forgotPassword: {
-        color: '#25292e',
+        color: semanticColors.linkColor,
         fontSize: 14,
         marginTop: 10,
         alignSelf: 'flex-end',
@@ -249,20 +248,20 @@ const styles = StyleSheet.create({
         textDecorationLine: 'underline',
     },
     gotAccount: {
-        color: '#25292e',
+        color: semanticColors.textBody,
         fontSize: 14,
         marginTop: 20,
         alignSelf: 'center',
         marginBottom: 5,
     },
     gotAccount_sub: {
-        color: '#FFB850',
+        color: semanticColors.warningBorder,
         fontSize: 14,
         fontWeight: 'bold',
         textDecorationLine: 'underline',
     },
     button: {
-        backgroundColor: '#25292e',
+        backgroundColor: semanticColors.buttonPrimary,
         padding: 15,
         width: '100%',
         alignItems: 'center',
@@ -270,7 +269,7 @@ const styles = StyleSheet.create({
         ...shadowStyles,
     },
     buttonText: {
-        color: 'white',
+        color: semanticColors.buttonPrimaryText,
         fontSize: 16,
     },
 });

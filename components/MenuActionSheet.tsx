@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import ActionSheet, { ActionSheetRef } from "react-native-actions-sheet";
+import { semanticColors } from '../theme/semanticColors';
 
 interface MenuItemProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -15,7 +16,7 @@ interface MenuActionSheetProps {
   onSignOut: () => void;
 }
 
-const MenuItem: React.FC<MenuItemProps> = ({ icon, label, onPress, color = "#00a97b" }) => (
+const MenuItem: React.FC<MenuItemProps> = ({ icon, label, onPress, color = semanticColors.buttonPrimary }) => (
   <TouchableOpacity style={styles.menuGridItem} onPress={onPress}>
     <Ionicons name={icon} size={24} color={color} />
     <Text style={styles.menuGridText}>{label}</Text>
@@ -78,7 +79,7 @@ const styles = StyleSheet.create({
   menuGridText: { 
     marginTop: 5, 
     fontSize: 12, 
-    color: '#666' 
+    color: semanticColors.textDescription 
   },
   menuItem: { 
     paddingVertical: 10, 
@@ -89,11 +90,11 @@ const styles = StyleSheet.create({
     marginTop: 20, 
     borderTopWidth: 1, 
     justifyContent: 'center', 
-    borderTopColor: '#eee', 
+    borderTopColor: semanticColors.divider, 
     paddingTop: 20 
   },
   signOutText: { 
-    color: 'red', 
+    color: semanticColors.dangerText, 
     marginLeft: 10 
   },
 });

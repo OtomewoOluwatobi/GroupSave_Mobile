@@ -19,6 +19,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ALERT_TYPE, Dialog } from "react-native-alert-notification";
+import { semanticColors } from '../../../../theme/semanticColors';
 
 import FormInput from "../../../../components/FormInput";
 import Constants from 'expo-constants';
@@ -438,11 +439,11 @@ const CreateGroupScreen = () => {
 const styles = StyleSheet.create({
     keyboardView: {
         flex: 1,
-        backgroundColor: "#fff",
+        backgroundColor: semanticColors.containerBackground,
     },
     container: {
         padding: 16,
-        backgroundColor: "#fff",
+        backgroundColor: semanticColors.containerBackground,
         flexGrow: 1,
         height: "100%",
         justifyContent: "center",
@@ -455,14 +456,17 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: "bold",
         marginBottom: 10,
+        color: semanticColors.textHeading,
     },
     subtitle: {
         fontSize: 16,
         marginBottom: 30,
+        color: semanticColors.textBody,
     },
     inputLabel: {
         fontSize: 16,
         marginTop: 10,
+        color: semanticColors.textHeading,
     },
     rowBetween: {
         flexDirection: "row",
@@ -477,12 +481,12 @@ const styles = StyleSheet.create({
     },
     subNote: {
         fontSize: 14,
-        color: "#666",
+        color: semanticColors.textDescription,
         marginTop: 5,
     },
     dateInputContainer: {
         borderWidth: 1,
-        borderColor: "#ddd",
+        borderColor: semanticColors.inputBorder,
         borderRadius: 5,
         paddingHorizontal: 10,
         paddingVertical: 15,
@@ -491,17 +495,17 @@ const styles = StyleSheet.create({
     },
     emailBox: {
         flexDirection: "row",
-        backgroundColor: "#fff",
+        backgroundColor: semanticColors.containerBackground,
         marginTop: 10,
         padding: 10,
         borderRadius: 5,
         borderWidth: 1,
-        borderColor: "#ddd",
+        borderColor: semanticColors.inputBorder,
         minHeight: 150,
     },
     emailListText: {
         fontSize: 14,
-        color: "#444",
+        color: semanticColors.textBody,
         lineHeight: 22,
         flex: 1,
     },
@@ -518,7 +522,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     button: {
-        backgroundColor: "#146459",
+        backgroundColor: semanticColors.buttonPrimary,
         padding: 15,
         height: 50,
         width: "100%",
@@ -531,23 +535,23 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     blackButton: {
-        backgroundColor: "#111",
+        backgroundColor: semanticColors.textHeading,
     },
     disabledButton: {
         opacity: 0.6,
     },
     buttonText: {
-        color: "#fff",
+        color: semanticColors.buttonPrimaryText,
         fontSize: 16,
     },
     errorText: {
-        color: "red",
+        color: semanticColors.textError,
         fontSize: 12,
         marginTop: 5,
     },
     dateInputText: {
         fontSize: 16,
-        color: "#444",
+        color: semanticColors.textBody,
     },
 });
 

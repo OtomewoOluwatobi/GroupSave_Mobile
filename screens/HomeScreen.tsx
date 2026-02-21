@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { useNavigation, NavigationProp } from '@react-navigation/native'
+import { semanticColors } from '../theme/semanticColors'
 
 type RootStackParamList = {
     Signin: undefined;
@@ -27,7 +28,7 @@ function HomeScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#25292e',
+        backgroundColor: semanticColors.buttonPrimary,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -40,11 +41,11 @@ const styles = StyleSheet.create({
     logo: {
         fontSize: 40,
         fontWeight: 'bold',
-        color: '#FFB850',
+        color: semanticColors.warningBorder,
         marginBottom: 20,
     },
     text: {
-        color: '#fff',
+        color: semanticColors.buttonPrimaryText,
     },
 });
 

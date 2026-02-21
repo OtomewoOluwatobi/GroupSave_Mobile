@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
 import { TextInput, Text, StyleSheet, Platform, KeyboardTypeOptions } from 'react-native';
+import { semanticColors } from '../theme/semanticColors';
 
 type FormInputProps = {
     field?: string;
@@ -44,14 +45,18 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 50,
         borderWidth: 1,
-        borderColor: '#ddd',
+        borderColor: semanticColors.inputBorder,
         marginVertical: 10,
         paddingHorizontal: 10,
-        backgroundColor: 'white',
+        backgroundColor: semanticColors.inputBackground,
+        color: semanticColors.inputText,
+        fontSize: 16,
     },
     error: {
-        color: 'red',
+        color: semanticColors.textError,
         fontSize: 12,
+        marginTop: 4,
+        marginLeft: 4,
     },
 });
 

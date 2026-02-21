@@ -16,6 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Formik } from 'formik';
 import Constants from 'expo-constants';
+import { semanticColors } from '../theme/semanticColors';
 
 type RootStackParamList = {
     Signin: undefined;
@@ -228,7 +229,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: '#014131',
+        backgroundColor: semanticColors.buttonPrimary,
     },
     formContainer: {
         width: '100%',
@@ -243,47 +244,47 @@ const styles = StyleSheet.create({
         fontSize: 32,
         fontWeight: 'bold',
         marginBottom: 20,
-        color: '#ffffff',
+        color: semanticColors.buttonPrimaryText,
     },
     container2: {
         width: '100%',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#ffffff',
+        backgroundColor: semanticColors.containerBackground,
         padding: 30,
         borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
         borderWidth: 1,
-        borderColor: '#ddd',
+        borderColor: semanticColors.containerBorder,
     },
     title: {
         fontSize: 18,
         marginVertical: 10,
         fontWeight: 'bold',
-        color: '#25292e',
+        color: semanticColors.textHeading,
     },
     titleAlign: {
         alignSelf: 'flex-start',
     },
     termsLink: {
-        color: '#25292e',
+        color: semanticColors.linkColor,
         fontSize: 14,
         marginTop: 10,
         alignSelf: 'flex-end',
         marginBottom: 10,
         textDecorationLine: 'underline',
         textDecorationStyle: 'solid',
-        textDecorationColor: '#25292e',
+        textDecorationColor: semanticColors.linkColor,
     },
     gotAccount: {
-        color: '#25292e',
+        color: semanticColors.textBody,
         fontSize: 14,
         marginTop: 20,
         alignSelf: 'center',
         marginBottom: 5,
     },
     gotAccount_sub: {
-        color: '#FFB850',
+        color: semanticColors.warningBorder,
         fontSize: 14,
         fontWeight: 'bold',
         marginTop: 20,
@@ -291,20 +292,20 @@ const styles = StyleSheet.create({
         marginBottom: 5,
         textDecorationLine: 'underline',
         textDecorationStyle: 'solid',
-        textDecorationColor: '#FFB850',
+        textDecorationColor: semanticColors.warningBorder,
     },
     input: {
         width: '100%',
         height: 50,
         borderWidth: 1,
-        borderColor: '#ddd',
+        borderColor: semanticColors.inputBorder,
         marginVertical: 10,
         paddingHorizontal: 10,
-        backgroundColor: 'white',
+        backgroundColor: semanticColors.inputBackground,
         ...inputShadow,
     },
     button: {
-        backgroundColor: '#25292e',
+        backgroundColor: semanticColors.buttonPrimary,
         padding: 15,
         width: '100%',
         alignItems: 'center',
@@ -312,11 +313,11 @@ const styles = StyleSheet.create({
         ...shadowStyles,
     },
     buttonText: {
-        color: 'white',
+        color: semanticColors.buttonPrimaryText,
         fontSize: 16,
     },
     error: {
-        color: 'red',
+        color: semanticColors.textError,
         fontSize: 12,
     },
 });

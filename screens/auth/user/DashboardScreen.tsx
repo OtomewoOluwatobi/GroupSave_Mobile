@@ -19,6 +19,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import axios from "axios";
 import MenuActionSheet from "../../../components/MenuActionSheet";
 import Constants from 'expo-constants';
+import { semanticColors } from '../../../theme/semanticColors';
 
 type RootStackParamList = {
     Home: undefined;
@@ -285,7 +286,7 @@ const shadowStyles = Platform.select({
 
 // Component styles
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#e8f3f5" },
+    container: { flex: 1, backgroundColor: semanticColors.pageBg },
     header: {
         flexDirection: "row",
         justifyContent: "space-between",
@@ -306,33 +307,33 @@ const styles = StyleSheet.create({
         marginTop: 10,
         paddingVertical: 20,
     },
-    title: { fontSize: 24, fontWeight: "600", color: "#444" },
-    subtitle: { color: "#777" },
+    title: { fontSize: 24, fontWeight: "600", color: semanticColors.textHeading },
+    subtitle: { color: semanticColors.textSecondary },
     menuButton: { marginLeft: "auto" },
     balanceInfo: {
-        backgroundColor: "#fff",
+        backgroundColor: semanticColors.containerBackground,
         padding: 20,
         marginHorizontal: 20,
         marginBottom: 20,
     },
     balanceRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 15 },
-    balanceLabel: { color: "#777", fontSize: 14 },
-    balanceValue: { fontSize: 24, fontWeight: "700", color: "#333", marginTop: 5 },
-    contributedAmount: { color: "#00a97b" },
+    balanceLabel: { color: semanticColors.textDescription, fontSize: 14 },
+    balanceValue: { fontSize: 24, fontWeight: "700", color: semanticColors.textHeading, marginTop: 5 },
+    contributedAmount: { color: semanticColors.buttonPrimary },
     textRight: { textAlign: "right" },
     tabHeaders: { flexDirection: "row", marginHorizontal: 20 },
     tabButton: { paddingVertical: 8, marginHorizontal: 5 },
-    tabText: { color: "#111", fontWeight: "600" },
-    activeTabText: { color: "#00a97b" },
+    tabText: { color: semanticColors.textBody, fontWeight: "600" },
+    activeTabText: { color: semanticColors.buttonPrimary },
     horizontalScroll: { paddingVertical: 10, marginHorizontal: 20 },
-    groupCard: { backgroundColor: "#00a97b", padding: 15, marginRight: 15, width: 200 },
-    groupTitle: { fontSize: 18, fontWeight: "600", color: "#e8f3f5" },
-    groupAmount: { fontSize: 20, fontWeight: "700", color: "#fff", marginTop: 5 },
+    groupCard: { backgroundColor: semanticColors.buttonPrimary, padding: 15, marginRight: 15, width: 200 },
+    groupTitle: { fontSize: 18, fontWeight: "600", color: semanticColors.buttonPrimaryText },
+    groupAmount: { fontSize: 20, fontWeight: "700", color: semanticColors.buttonPrimaryText, marginTop: 5 },
     groupDetails: { flexDirection: "row", justifyContent: "space-between", marginTop: 10 },
-    groupDetailLabel: { color: "#e8f3f5", fontSize: 12 },
-    groupDetailValue: { color: "#eefdf7", fontSize: 14 },
+    groupDetailLabel: { color: semanticColors.buttonPrimaryText, fontSize: 12, opacity: 0.9 },
+    groupDetailValue: { color: semanticColors.buttonPrimaryText, fontSize: 14, opacity: 0.95 },
     addGroupButton: {
-        backgroundColor: "#111",
+        backgroundColor: semanticColors.textHeading,
         padding: 15,
         marginRight: 15,
         height: 70,
@@ -347,25 +348,25 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: "600",
         marginVertical: 5,
-        color: "#555",
+        color: semanticColors.textBody,
         paddingHorizontal: 20,
     },
     boldText: { fontWeight: "bold" },
     transactionsList: {
-        backgroundColor: "#fff",
+        backgroundColor: semanticColors.containerBackground,
         marginHorizontal: 20,
         marginVertical: 10,
         padding: 15,
         maxHeight: 500,
     },
     transactionItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 15 },
-    transactionItemBorder: { borderBottomWidth: 1, borderBottomColor: "#eee" },
+    transactionItemBorder: { borderBottomWidth: 1, borderBottomColor: semanticColors.divider },
     transactionDetails: { flexDirection: "row", alignItems: "center" },
-    transactionIcon: { backgroundColor: "#444", padding: 10, borderRadius: 25 },
+    transactionIcon: { backgroundColor: semanticColors.textBody, padding: 10, borderRadius: 25 },
     transactionText: { marginLeft: 15 },
-    transactionTitle: { fontSize: 16, fontWeight: "600", color: "#333" },
-    transactionDate: { color: "#777", marginTop: 4 },
-    transactionAmount: { fontSize: 16, fontWeight: "600", color: "#00a97b" },
+    transactionTitle: { fontSize: 16, fontWeight: "600", color: semanticColors.textHeading },
+    transactionDate: { color: semanticColors.textDescription, marginTop: 4 },
+    transactionAmount: { fontSize: 16, fontWeight: "600", color: semanticColors.buttonPrimary },
 });
 
 export default DashboardScreen;
