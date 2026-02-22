@@ -1,29 +1,29 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
     View,
     Text,
-    Image,
     ScrollView,
     StyleSheet,
     TouchableOpacity,
     Platform,
     ActivityIndicator,
-    Animated,
     StatusBar,
+    RefreshControl,
 } from "react-native";
-import { Ionicons, Feather, MaterialIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient as LG } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import ActionSheet, { ActionSheetRef } from "react-native-actions-sheet";
+import { ActionSheetRef } from "react-native-actions-sheet";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import axios from "axios";
-import MenuActionSheet from "../../../components/MenuActionSheet";
 import Constants from "expo-constants";
+
+import MenuActionSheet from "../../../components/MenuActionSheet";
 import { semanticColors } from "../../../theme/semanticColors";
 
-const LinearGradient = LG as any;
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type RootStackParamList = {
     Home: undefined;
@@ -31,615 +31,558 @@ type RootStackParamList = {
     Signup: undefined;
     Dashboard: undefined;
     CreateGroup: undefined;
-    GroupDetails: {
-        group_id: number;
-    };
+    GroupDetails: { group_id: number };
 };
 
-const DashboardScreen: React.FC = () => {
-    // Navigation and local state hooks
-    const navigation =
-        useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-    const [activeTab, setActiveTab] = useState("topGroups");
-    const [user, setUser] = useState<any>(null);
-    const [topGroups, setTopGroups] = useState<any[]>([]);
-    const [myGroup, setMyGroup] = useState<any[]>([]);
-    const [stats, setStats] = useState<any>(null);
-    const [totalPayable, setTotalPayable] = useState(0);
-    const [totalContributed, setTotalContributed] = useState(0);
+interface Group {
+    id: number;
+    title: string;
+    target_amount: string;
+    active_members: number;
+    total_members: number;
+    owner?: string;
+    is_active?: boolean;
+    user_role?: "admin" | "member";
+    payable_amount?: string;
+}
+
+interface DashboardStats {
+    total_groups?: number;
+    owned_groups?: number;
+    member_groups?: number;
+    active_groups?: number;
+    pending_invitations?: number;
+}
+
+interface User {
+    name?: string;
+    email?: string;
+}
+
+interface DashboardResponse {
+    suggested_groups?: Group[];
+    user_groups?: Group[];
+    stats?: DashboardStats;
+    user?: User;
+}
+
+interface StatCardConfig {
+    label: string;
+    value: number;
+    colors: readonly [string, string];
+}
+
+type TabType = "topGroups" | "myGroup";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const LinearGradient = LG as React.ComponentType<any>;
+
+const CURRENCY_FORMATTER = new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "GBP",
+});
+
+const DATE_OPTIONS: Intl.DateTimeFormatOptions = {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+};
+
+// ─── Utility Functions ────────────────────────────────────────────────────────
+
+const formatCurrency = (amount: string | number): string => {
+    return CURRENCY_FORMATTER.format(parseFloat(String(amount)));
+};
+
+const getGreeting = (name?: string): string => {
+    if (!name) return "Hi 👋";
+    const firstName = name.split(" ")[0];
+    return `Hi ${firstName.charAt(0).toUpperCase()}${firstName.slice(1)}, 👋`;
+};
+
+const calculateProgress = (active: number, total: number): number => {
+    if (total === 0) return 0;
+    return (active / total) * 100;
+};
+
+// ─── Sub-Components ───────────────────────────────────────────────────────────
+
+const LoadingView: React.FC = () => (
+    <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={semanticColors.buttonPrimary} />
+        <Text style={styles.loadingText}>Loading dashboard...</Text>
+    </View>
+);
+
+const Header: React.FC<{
+    userName?: string;
+    onMenuPress: () => void;
+}> = ({ userName, onMenuPress }) => (
+    <View style={styles.header}>
+        <View style={styles.headerContent}>
+            <View style={styles.headerTextContainer}>
+                <Text style={styles.title}>{getGreeting(userName)}</Text>
+                <Text style={styles.subtitle}>
+                    {new Date().toLocaleDateString("en-GB", DATE_OPTIONS)}
+                </Text>
+            </View>
+            <TouchableOpacity style={styles.menuButton} onPress={onMenuPress}>
+                <View style={styles.hamburgerButton}>
+                    <View style={styles.hamburgerLine} />
+                    <View style={styles.hamburgerLine} />
+                    <View style={styles.hamburgerLine} />
+                </View>
+            </TouchableOpacity>
+        </View>
+    </View>
+);
+
+const StatCard: React.FC<StatCardConfig> = ({ label, value, colors }) => (
+    <View style={styles.statCard}>
+        <LinearGradient
+            colors={colors}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.statCardInner}
+        >
+            <Text style={styles.statLabel}>{label}</Text>
+            <Text style={styles.statValue}>{value}</Text>
+        </LinearGradient>
+    </View>
+);
+
+const StatsCarousel: React.FC<{ stats: DashboardStats | null }> = ({ stats }) => {
+    const statCards: StatCardConfig[] = useMemo(
+        () => [
+            { label: "Total Groups", value: stats?.total_groups ?? 0, colors: ["#7b6ef6", "#5b4de0"] as const },
+            { label: "Owned Groups", value: stats?.owned_groups ?? 0, colors: ["#6366f1", "#4338ca"] as const },
+            { label: "Member Groups", value: stats?.member_groups ?? 0, colors: ["#8b5cf6", "#6d28d9"] as const },
+            { label: "Active Groups", value: stats?.active_groups ?? 0, colors: ["#10b981", "#059669"] as const },
+            { label: "Pending Invites", value: stats?.pending_invitations ?? 0, colors: ["#f59e0b", "#d97706"] as const },
+        ],
+        [stats]
+    );
+
+    return (
+        <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.balanceScrollContent}
+            style={styles.balanceInfo}
+        >
+            {statCards.map((card) => (
+                <StatCard key={card.label} {...card} />
+            ))}
+        </ScrollView>
+    );
+};
+
+const ProgressBar: React.FC<{ progress: number }> = ({ progress }) => (
+    <View style={styles.progressBarContainer}>
+        <View style={[styles.progressBar, { width: `${Math.min(progress, 100)}%` }]} />
+    </View>
+);
+
+const GroupCard: React.FC<{
+    group: Group;
+    onPress?: () => void;
+    showStatus?: boolean;
+}> = ({ group, onPress, showStatus = false }) => {
+    const memberProgress = calculateProgress(group.active_members, group.total_members);
+
+    return (
+        <TouchableOpacity
+            style={[styles.groupCard, shadowStyles]}
+            onPress={onPress}
+            activeOpacity={0.8}
+        >
+            <View style={styles.groupCardHeader}>
+                <View style={styles.groupBadge}>
+                    <Text style={styles.groupBadgeText}>{Math.round(memberProgress)}%</Text>
+                </View>
+                {showStatus && (
+                    <View style={styles.statusContainer}>
+                        {!group.is_active && (
+                            <View style={[styles.statusIcon, styles.warningIcon]}>
+                                <Ionicons name="warning" size={12} color="#fff" />
+                            </View>
+                        )}
+                        {group.user_role === "admin" && (
+                            <View style={[styles.statusIcon, styles.adminIcon]}>
+                                <Ionicons name="shield" size={12} color="#fff" />
+                            </View>
+                        )}
+                    </View>
+                )}
+            </View>
+
+            <Text style={styles.groupTitle} numberOfLines={1}>
+                {group.title}
+            </Text>
+
+            {showStatus && (
+                <Text style={styles.groupSubtitle}>
+                    {group.user_role === "admin" ? "Admin" : "Member"}
+                </Text>
+            )}
+
+            <Text style={styles.groupAmount}>
+                {formatCurrency(group.target_amount)}
+            </Text>
+
+            <ProgressBar progress={memberProgress} />
+
+            <View style={styles.groupDetails}>
+                <View>
+                    <Text style={styles.groupDetailLabel}>
+                        {showStatus ? "Duration" : "Owner"}
+                    </Text>
+                    <Text style={styles.groupDetailValue}>
+                        {showStatus ? `${group.total_members} months` : group.owner}
+                    </Text>
+                </View>
+                <View>
+                    <Text style={styles.groupDetailLabel}>Members</Text>
+                    <Text style={styles.groupDetailValue}>
+                        {group.active_members}/{group.total_members}
+                    </Text>
+                </View>
+            </View>
+        </TouchableOpacity>
+    );
+};
+
+const AddGroupButton: React.FC<{ onPress: () => void }> = ({ onPress }) => (
+    <TouchableOpacity
+        onPress={onPress}
+        style={[styles.addGroupButton, shadowStyles]}
+        activeOpacity={0.8}
+    >
+        <MaterialIcons name="format-list-bulleted-add" size={30} color="#fff" />
+    </TouchableOpacity>
+);
+
+const EmptyState: React.FC<{ message: string }> = ({ message }) => (
+    <View style={styles.noRecordContainer}>
+        <Text style={styles.noRecordText}>{message}</Text>
+    </View>
+);
+
+const TabHeader: React.FC<{
+    activeTab: TabType;
+    onTabChange: (tab: TabType) => void;
+}> = ({ activeTab, onTabChange }) => {
+    const tabs: { key: TabType; label: string }[] = [
+        { key: "topGroups", label: "Explore" },
+        { key: "myGroup", label: "A Member" },
+    ];
+
+    return (
+        <View style={styles.tabHeadersContainer}>
+            {tabs.map(({ key, label }) => (
+                <TouchableOpacity
+                    key={key}
+                    style={styles.tabButton}
+                    onPress={() => onTabChange(key)}
+                    activeOpacity={0.7}
+                >
+                    <Text style={[styles.tabText, activeTab === key && styles.activeTabText]}>
+                        {label}
+                    </Text>
+                    {activeTab === key && <View style={styles.tabUnderline} />}
+                </TouchableOpacity>
+            ))}
+        </View>
+    );
+};
+
+const TransactionItem: React.FC<{
+    title: string;
+    date: string;
+    amount: string;
+    type: "credit" | "debit";
+    gradientColors: readonly [string, string];
+}> = ({ title, date, amount, type, gradientColors }) => (
+    <View style={[styles.transactionItem, shadowStyles]}>
+        <View style={styles.transactionDetails}>
+            <LinearGradient
+                colors={gradientColors}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.transactionIcon}
+            >
+                <Ionicons
+                    name={type === "credit" ? "arrow-down" : "arrow-up"}
+                    size={20}
+                    color="#fff"
+                />
+            </LinearGradient>
+            <View style={styles.transactionText}>
+                <Text style={styles.transactionTitle}>{title}</Text>
+                <Text style={styles.transactionDate}>{date}</Text>
+            </View>
+        </View>
+        <Text
+            style={[
+                styles.transactionAmount,
+                { color: type === "credit" ? "#10b981" : "#f87171" },
+            ]}
+        >
+            {type === "credit" ? "+" : "-"}{amount}
+        </Text>
+    </View>
+);
+
+const TransactionsList: React.FC = () => {
+    const transactions = useMemo(
+        () => [
+            { id: 1, title: "Group Contribution", date: "Oct 12, 2023", amount: "£15,000.00", type: "credit" as const, colors: ["#7b6ef6", "#a78bfa"] as const },
+            { id: 2, title: "Monthly Payment", date: "Oct 10, 2023", amount: "£500.00", type: "debit" as const, colors: ["#10b981", "#059669"] as const },
+            { id: 3, title: "Payout Received", date: "Sep 28, 2023", amount: "£6,000.00", type: "credit" as const, colors: ["#f59e0b", "#d97706"] as const },
+            { id: 4, title: "Group Contribution", date: "Sep 12, 2023", amount: "£15,000.00", type: "credit" as const, colors: ["#7b6ef6", "#a78bfa"] as const },
+            { id: 5, title: "Monthly Payment", date: "Sep 10, 2023", amount: "£500.00", type: "debit" as const, colors: ["#10b981", "#059669"] as const },
+        ],
+        []
+    );
+
+    return (
+        <View style={styles.transactionsList}>
+            {transactions.map((tx) => (
+                <TransactionItem
+                    key={tx.id}
+                    title={tx.title}
+                    date={tx.date}
+                    amount={tx.amount}
+                    type={tx.type}
+                    gradientColors={tx.colors}
+                />
+            ))}
+        </View>
+    );
+};
+
+// ─── Custom Hooks ─────────────────────────────────────────────────────────────
+
+const useDashboardData = (navigation: NativeStackNavigationProp<RootStackParamList>) => {
+    const [user, setUser] = useState<User | null>(null);
+    const [topGroups, setTopGroups] = useState<Group[]>([]);
+    const [myGroups, setMyGroups] = useState<Group[]>([]);
+    const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loading, setLoading] = useState(true);
-    const actionSheetRef = useRef<ActionSheetRef | null>(null);
+    const [refreshing, setRefreshing] = useState(false);
 
-    // Fetch user info and dashboard data on component mount
-    useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const userData = await AsyncStorage.getItem("user");
-                console.log("User data from storage:", userData ? "Found" : "Not found");
-                if (userData) {
-                    setUser(JSON.parse(userData));
-                }
-            } catch (error) {
-                console.error("Failed to fetch user data:", error);
+    const fetchData = useCallback(async (isRefresh = false) => {
+        try {
+            if (isRefresh) setRefreshing(true);
+            else setLoading(true);
+
+            const userData = await AsyncStorage.getItem("user");
+            if (userData) setUser(JSON.parse(userData));
+
+            const token = await AsyncStorage.getItem("token");
+            if (!token) {
+                console.error("❌ No authentication token found.");
+                navigation.reset({ index: 0, routes: [{ name: "Signin" }] });
+                return;
             }
-        };
 
-        const fetchDashboardData = async () => {
-            try {
-                const token = await AsyncStorage.getItem("token");
-                
-                // Validate token exists
-                if (!token) {
-                    console.error("❌ No authentication token found.");
-                    setLoading(false);
-                    navigation.reset({
-                        index: 0,
-                        routes: [{ name: "Signin" }],
-                    });
-                    return;
-                }
-                
-                console.log("✅ Token found:", token.substring(0, 30) + "...");
-                
-                const apiUrl = Constants.expoConfig?.extra?.apiUrl;
-                if (!apiUrl) {
-                    console.error("❌ API URL not configured in app.json");
-                    setLoading(false);
-                    return;
-                }
-                
-                console.log("🔗 API URL:", apiUrl);
-                
-                const config = {
-                    method: "get" as const,
-                    url: `${apiUrl}/user/dashboard`,
+            const apiUrl = Constants.expoConfig?.extra?.apiUrl;
+            if (!apiUrl) {
+                console.error("❌ API URL not configured in app.json");
+                return;
+            }
+
+            const response = await axios.get<DashboardResponse>(
+                `${apiUrl}/user/dashboard`,
+                {
                     headers: {
                         Accept: "application/json",
                         Authorization: `Bearer ${token}`,
                     },
-                };
-                
-                console.log("📡 Requesting:", config.url);
-                const response = await axios.request<{
-                    suggested_groups?: any[];
-                    user_groups?: any[];
-                    stats?: any;
-                    user?: any;
-                }>(config);
-                
-                console.log("✅ Response received:", response.status);
-                
-                // Destructure API response data
-                const {
-                    suggested_groups = [],
-                    user_groups = [],
-                    stats: dashboardStats = {},
-                    user: apiUser = null,
-                } = response.data;
-                
-                console.log("📊 Data loaded - Groups:", suggested_groups.length, "My Groups:", user_groups.length);
-                
-                setTopGroups(suggested_groups);
-                setMyGroup(user_groups);
-                setStats(dashboardStats);
-                if (apiUser) setUser(apiUser);
-                
-                // Calculate total payable amounts
-                const payable = [...user_groups, ...suggested_groups].reduce(
-                    (sum, group) => sum + parseFloat(group.payable_amount || 0),
-                    0
-                );
-                setTotalPayable(payable);
-                
-                console.log("✅ Dashboard data loaded successfully");
-            } catch (error: any) {
-                console.error("❌ Error fetching dashboard data:", error.message);
-                if (error.response?.status === 401) {
-                    console.error("🔐 Unauthorized (401) - Token invalid or expired");
-                    await AsyncStorage.removeItem("token");
-                    await AsyncStorage.removeItem("user");
-                    navigation.reset({
-                        index: 0,
-                        routes: [{ name: "Signin" }],
-                    });
-                } else if (error.response) {
-                    console.error("❌ Server error:", error.response.status, error.response.data);
-                } else if (error.request) {
-                    console.error("❌ No response from server:", error.message);
-                } else {
-                    console.error("❌ Request setup error:", error.message);
                 }
-            } finally {
-                setLoading(false);
-            }
-        };
+            );
 
-        fetchUserData();
-        fetchDashboardData();
+            const {
+                suggested_groups = [],
+                user_groups = [],
+                stats: dashboardStats = {},
+                user: apiUser = null,
+            } = response.data;
+
+            setTopGroups(suggested_groups);
+            setMyGroups(user_groups);
+            setStats(dashboardStats);
+            if (apiUser) setUser(apiUser);
+
+        } catch (error: any) {
+            console.error("❌ Error fetching dashboard data:", error.message);
+
+            if (error.response?.status === 401) {
+                await AsyncStorage.multiRemove(["token", "user"]);
+                navigation.reset({ index: 0, routes: [{ name: "Signin" }] });
+            }
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
     }, [navigation]);
 
-    // Handle sign-out process by clearing token and user, then navigating to Signin
-    const handleSignOut = async () => {
-        actionSheetRef.current?.hide();
+    const signOut = useCallback(async () => {
         try {
-            await AsyncStorage.removeItem("token");
-            await AsyncStorage.removeItem("user");
-            navigation.reset({
-                index: 0,
-                routes: [{ name: "Signin" }],
-            });
+            await AsyncStorage.multiRemove(["token", "user"]);
+            navigation.reset({ index: 0, routes: [{ name: "Signin" }] });
         } catch (error) {
             console.error("Error signing out:", error);
         }
-    };
+    }, [navigation]);
 
-    // Render a card for each group from topGroups list (suggested_groups)
-    const renderGroupCard = useCallback((group: any) => {
-        const memberProgress =
-            (group.active_members / group.total_members) * 100;
-        return (
-            <TouchableOpacity key={group.id} style={[styles.groupCard, shadowStyles]}>
-                <View style={styles.groupCardHeader}>
-                    <View style={styles.groupBadge}>
-                        <Text style={styles.groupBadgeText}>
-                            {Math.round(memberProgress)}%
-                        </Text>
-                    </View>
-                </View>
-                <Text style={styles.groupTitle}>{group.title}</Text>
-                <Text style={styles.groupAmount}>
-                    {new Intl.NumberFormat("en-GB", {
-                        style: "currency",
-                        currency: "GBP",
-                    }).format(parseFloat(group.target_amount))}
-                </Text>
-                <View style={styles.progressBarContainer}>
-                    <View style={[styles.progressBar, { width: `${memberProgress}%` }]} />
-                </View>
-                <View style={styles.groupDetails}>
-                    <View>
-                        <Text style={styles.groupDetailLabel}>Owner</Text>
-                        <Text style={styles.groupDetailValue}>
-                            {group.owner}
-                        </Text>
-                    </View>
-                    <View>
-                        <Text style={styles.groupDetailLabel}>Members</Text>
-                        <Text style={styles.groupDetailValue}>
-                            {group.active_members}/{group.total_members}
-                        </Text>
-                    </View>
-                </View>
-            </TouchableOpacity>
-        );
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    return {
+        user,
+        topGroups,
+        myGroups,
+        stats,
+        loading,
+        refreshing,
+        refetch: () => fetchData(true),
+        signOut,
+    };
+};
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
+const DashboardScreen: React.FC = () => {
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    const actionSheetRef = useRef<ActionSheetRef>(null);
+    const [activeTab, setActiveTab] = useState<TabType>("topGroups");
+
+    const {
+        user,
+        topGroups,
+        myGroups,
+        stats,
+        loading,
+        refreshing,
+        refetch,
+        signOut,
+    } = useDashboardData(navigation);
+
+    const handleSignOut = useCallback(async () => {
+        actionSheetRef.current?.hide();
+        await signOut();
+    }, [signOut]);
+
+    const handleMenuPress = useCallback(() => {
+        actionSheetRef.current?.show();
     }, []);
 
-    // Render a card for each group in which the user is a member (user_groups)
-    const renderMyGroupCard = useCallback(
-        (group: any) => {
-            const memberProgress =
-                (group.active_members / group.total_members) * 100;
-            return (
-                <TouchableOpacity
-                    key={group.id}
-                    style={[styles.groupCard, shadowStyles]}
-                    onPress={() =>
-                        navigation.navigate("GroupDetails", {
-                            group_id: group.id,
-                        })
-                    }
-                >
-                    <View style={styles.groupCardHeader}>
-                        <View style={styles.groupBadge}>
-                            <Text style={styles.groupBadgeText}>
-                                {Math.round(memberProgress)}%
-                            </Text>
-                        </View>
-                        <View style={{ flexDirection: "row", alignItems: "center" }}>
-                            {!group.is_active && (
-                                <View
-                                    style={[styles.statusIcon, { backgroundColor: "#ff9800" }]}
-                                >
-                                    <Ionicons name="warning" size={12} color="#fff" />
-                                </View>
-                            )}
-                            {group.user_role === "admin" && (
-                                <View
-                                    style={[
-                                        styles.statusIcon,
-                                        {
-                                            backgroundColor: semanticColors.buttonPrimary,
-                                            marginLeft: 6,
-                                        },
-                                    ]}
-                                >
-                                    <Ionicons name="shield" size={12} color="#fff" />
-                                </View>
-                            )}
-                        </View>
-                    </View>
-                    <Text style={styles.groupTitle}>{group.title}</Text>
-                    <Text style={styles.groupSubtitle}>
-                        {group.user_role === "admin" ? "Admin" : "Member"}
-                    </Text>
-                    <Text style={styles.groupAmount}>
-                        {new Intl.NumberFormat("en-GB", {
-                            style: "currency",
-                            currency: "GBP",
-                        }).format(parseFloat(group.target_amount))}
-                    </Text>
-                    <View style={styles.progressBarContainer}>
-                        <View
-                            style={[styles.progressBar, { width: `${memberProgress}%` }]}
-                        />
-                    </View>
-                    <View style={styles.groupDetails}>
-                        <View>
-                            <Text style={styles.groupDetailLabel}>Duration</Text>
-                            <Text style={styles.groupDetailValue}>
-                                {group.total_members} months
-                            </Text>
-                        </View>
-                        <View>
-                            <Text style={styles.groupDetailLabel}>Members</Text>
-                            <Text style={styles.groupDetailValue}>
-                                {group.active_members}/{group.total_members}
-                            </Text>
-                        </View>
-                    </View>
-                </TouchableOpacity>
-            );
+    const handleGroupPress = useCallback(
+        (groupId: number) => {
+            navigation.navigate("GroupDetails", { group_id: groupId });
         },
-        [navigation],
+        [navigation]
     );
+
+    const handleCreateGroup = useCallback(() => {
+        navigation.navigate("CreateGroup");
+    }, [navigation]);
+
+    const renderExploreGroups = useMemo(() => {
+        if (topGroups.length === 0) {
+            return <EmptyState message="No groups found" />;
+        }
+        return topGroups.map((group) => (
+            <GroupCard key={group.id} group={group} />
+        ));
+    }, [topGroups]);
+
+    const renderMyGroups = useMemo(() => (
+        <>
+            {myGroups.map((group) => (
+                <GroupCard
+                    key={group.id}
+                    group={group}
+                    showStatus
+                    onPress={() => handleGroupPress(group.id)}
+                />
+            ))}
+            <AddGroupButton onPress={handleCreateGroup} />
+        </>
+    ), [myGroups, handleGroupPress, handleCreateGroup]);
+
+    if (loading) {
+        return (
+            <SafeAreaProvider>
+                <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+                <View style={styles.container}>
+                    <LoadingView />
+                </View>
+            </SafeAreaProvider>
+        );
+    }
 
     return (
         <SafeAreaProvider>
-            {/* ✅ Use barStyle="light-content" for dark backgrounds */}
-            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
             <View style={styles.container}>
-                {loading ? (
-                    <View style={styles.loadingContainer}>
-                        <ActivityIndicator
-                            size="large"
-                            color={semanticColors.buttonPrimary}
-                        />
-                        <Text style={styles.loadingText}>Loading dashboard...</Text>
-                    </View>
-                ) : (
-                    <>
-                <View style={styles.header}>
-                    <View style={styles.headerContent}>
-                        <View style={styles.headerTextContainer}>
-                            {/* Greeting the user */}
-                            <Text style={styles.title}>
-                                Hi{" "}
-                                {user?.name
-                                    ? user.name.split(" ")[0].charAt(0).toUpperCase() +
-                                    user.name.split(" ")[0].slice(1)
-                                    : ""}
-                                , 👋
-                            </Text>
-                            <Text style={styles.subtitle}>
-                                {new Date().toLocaleDateString("en-GB", { 
-                                    weekday: "long", 
-                                    month: "short", 
-                                    day: "numeric", 
-                                    year: "numeric" 
-                                })}
-                            </Text>
-                        </View>
-                        <TouchableOpacity
-                            style={styles.menuButton}
-                            onPress={() => actionSheetRef.current?.show()}
-                        >
-                            <View style={styles.hamburgerButton}>
-                                <View style={styles.hamburgerLine} />
-                                <View style={styles.hamburgerLine} />
-                                <View style={styles.hamburgerLine} />
-                            </View>
-                        </TouchableOpacity>
-                    </View>
-                </View>
+                {/* Fixed Header */}
+                <Header userName={user?.name} onMenuPress={handleMenuPress} />
+
                 <MenuActionSheet
                     actionSheetRef={actionSheetRef as React.RefObject<ActionSheetRef>}
                     onSignOut={handleSignOut}
                 />
-                {/* Display user's balance information - Stats Cards */}
+
+                {/* Scrollable Content */}
                 <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.balanceScrollContent}
-                    style={styles.balanceInfo}
+                    style={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={refetch}
+                            tintColor={semanticColors.buttonPrimary}
+                            colors={[semanticColors.buttonPrimary]}
+                        />
+                    }
                 >
-                    {/* Total Groups */}
-                    <View style={styles.statCard}>
-                        <LinearGradient
-                            colors={["#7b6ef6", "#5b4de0"]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={styles.statCardInner}
+                    <StatsCarousel stats={stats} />
+
+                    <Text style={[styles.sectionTitle, styles.boldText]}>Groups</Text>
+
+                    <View style={styles.groupsContainer}>
+                        <TabHeader activeTab={activeTab} onTabChange={setActiveTab} />
+
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            style={styles.horizontalScroll}
                         >
-                            <Text style={styles.statLabel}>Total Groups</Text>
-                            <Text style={styles.statValue}>{stats?.total_groups || 0}</Text>
-                        </LinearGradient>
+                            {activeTab === "topGroups" ? renderExploreGroups : renderMyGroups}
+                        </ScrollView>
                     </View>
 
-                    {/* Owned Groups */}
-                    <View style={styles.statCard}>
-                        <LinearGradient
-                            colors={["#6366f1", "#4338ca"]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={styles.statCardInner}
-                        >
-                            <Text style={styles.statLabel}>Owned Groups</Text>
-                            <Text style={styles.statValue}>{stats?.owned_groups || 0}</Text>
-                        </LinearGradient>
-                    </View>
-
-                    {/* Member Groups */}
-                    <View style={styles.statCard}>
-                        <LinearGradient
-                            colors={["#8b5cf6", "#6d28d9"]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={styles.statCardInner}
-                        >
-                            <Text style={styles.statLabel}>Member Groups</Text>
-                            <Text style={styles.statValue}>{stats?.member_groups || 0}</Text>
-                        </LinearGradient>
-                    </View>
-
-                    {/* Active Groups */}
-                    <View style={styles.statCard}>
-                        <LinearGradient
-                            colors={["#10b981", "#059669"]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={styles.statCardInner}
-                        >
-                            <Text style={styles.statLabel}>Active Groups</Text>
-                            <Text style={styles.statValue}>{stats?.active_groups || 0}</Text>
-                        </LinearGradient>
-                    </View>
-
-                    {/* Pending Invites */}
-                    <View style={styles.statCard}>
-                        <LinearGradient
-                            colors={["#f59e0b", "#d97706"]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={styles.statCardInner}
-                        >
-                            <Text style={styles.statLabel}>Pending Invites</Text>
-                            <Text style={styles.statValue}>{stats?.pending_invitations || 0}</Text>
-                        </LinearGradient>
-                    </View>
-                </ScrollView>
-                <Text style={[styles.sectionTitle, styles.boldText]}>Groups</Text>
-                <View style={styles.groupsContainer}>
-                    <View>
-                        {/* Tab Headers for switching views */}
-                        <View style={styles.tabHeadersContainer}>
-                            <TouchableOpacity
-                                style={styles.tabButton}
-                                onPress={() => setActiveTab("topGroups")}
-                            >
-                                <Text
-                                    style={[
-                                        styles.tabText,
-                                        activeTab === "topGroups" && styles.activeTabText,
-                                    ]}
-                                >
-                                    Explore
-                                </Text>
-                                {activeTab === "topGroups" && <View style={styles.tabUnderline} />}
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.tabButton}
-                                onPress={() => setActiveTab("myGroup")}
-                            >
-                                <Text
-                                    style={[
-                                        styles.tabText,
-                                        activeTab === "myGroup" && styles.activeTabText,
-                                    ]}
-                                >
-                                    A Member
-                                </Text>
-                                {activeTab === "myGroup" && <View style={styles.tabUnderline} />}
-                            </TouchableOpacity>
-                        </View>
-                        {/* Display groups list based on active tab */}
-                        {activeTab === "topGroups" && (
-                            <ScrollView
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                style={styles.horizontalScroll}
-                            >
-                                {topGroups.length > 0 ? (
-                                    topGroups.map(renderGroupCard)
-                                ) : (
-                                    <View style={styles.noRecordContainer}>
-                                        <Text style={styles.noRecordText}>No groups found</Text>
-                                    </View>
-                                )}
-                            </ScrollView>
-                        )}
-                        {activeTab === "myGroup" && (
-                            <ScrollView
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                style={styles.horizontalScroll}
-                            >
-                                {myGroup.length > 0 ? (
-                                    <>
-                                        {myGroup.map(renderMyGroupCard)}
-                                        {/* Button to create a new group */}
-                                        <TouchableOpacity
-                                            onPress={() => navigation.navigate("CreateGroup")}
-                                            style={[styles.addGroupButton, shadowStyles]}
-                                        >
-                                            <MaterialIcons
-                                                name="format-list-bulleted-add"
-                                                size={30}
-                                                color="#fff"
-                                            />
-                                        </TouchableOpacity>
-                                    </>
-                                ) : (
-                                    <>
-                                        {/* Button to create a new group */}
-                                        <TouchableOpacity
-                                            onPress={() => navigation.navigate("CreateGroup")}
-                                            style={[styles.addGroupButton, shadowStyles]}
-                                        >
-                                            <MaterialIcons
-                                                name="format-list-bulleted-add"
-                                                size={30}
-                                                color="#fff"
-                                            />
-                                        </TouchableOpacity>
-                                    </>
-                                )}
-                            </ScrollView>
-                        )}
-                    </View>
-                </View>
-                {/* Recent Transactions Section */}
-                <View>
                     <Text style={[styles.sectionTitle, styles.boldText]}>
                         Recent Transactions
                     </Text>
-                    <ScrollView
-                        style={styles.transactionsList}
-                        showsVerticalScrollIndicator={false}
-                    >
-                        {/* Transaction: Group Contribution (Credit) */}
-                        <View style={styles.transactionItem}>
-                            <View style={styles.transactionDetails}>
-                                <LinearGradient
-                                    colors={["#7b6ef6", "#a78bfa"]}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
-                                    style={styles.transactionIcon}
-                                >
-                                    <Ionicons name="arrow-down" size={20} color="#fff" />
-                                </LinearGradient>
-                                <View style={styles.transactionText}>
-                                    <Text style={styles.transactionTitle}>
-                                        Group Contribution
-                                    </Text>
-                                    <Text style={styles.transactionDate}>Oct 12, 2023</Text>
-                                </View>
-                            </View>
-                            <Text style={[styles.transactionAmount, { color: "#10b981" }]}>
-                                +£15,000.00
-                            </Text>
-                        </View>
 
-                        {/* Transaction: Monthly Payment (Debit) */}
-                        <View style={styles.transactionItem}>
-                            <View style={styles.transactionDetails}>
-                                <LinearGradient
-                                    colors={["#10b981", "#059669"]}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
-                                    style={styles.transactionIcon}
-                                >
-                                    <Ionicons name="arrow-up" size={20} color="#fff" />
-                                </LinearGradient>
-                                <View style={styles.transactionText}>
-                                    <Text style={styles.transactionTitle}>
-                                        Monthly Payment
-                                    </Text>
-                                    <Text style={styles.transactionDate}>Oct 10, 2023</Text>
-                                </View>
-                            </View>
-                            <Text style={[styles.transactionAmount, { color: "#f87171" }]}>
-                                -£500.00
-                            </Text>
-                        </View>
+                    <TransactionsList />
 
-                        {/* Transaction: Payout Received (Payout) */}
-                        <View style={styles.transactionItem}>
-                            <View style={styles.transactionDetails}>
-                                <LinearGradient
-                                    colors={["#f59e0b", "#d97706"]}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
-                                    style={styles.transactionIcon}
-                                >
-                                    <Ionicons name="arrow-down" size={20} color="#fff" />
-                                </LinearGradient>
-                                <View style={styles.transactionText}>
-                                    <Text style={styles.transactionTitle}>
-                                        Payout Received
-                                    </Text>
-                                    <Text style={styles.transactionDate}>Sep 28, 2023</Text>
-                                </View>
-                            </View>
-                            <Text style={[styles.transactionAmount, { color: "#10b981" }]}>
-                                +£6,000.00
-                            </Text>
-                        </View>
-
-                        {/* Transaction: Group Contribution (Credit) */}
-                        <View style={styles.transactionItem}>
-                            <View style={styles.transactionDetails}>
-                                <LinearGradient
-                                    colors={["#7b6ef6", "#a78bfa"]}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
-                                    style={styles.transactionIcon}
-                                >
-                                    <Ionicons name="arrow-down" size={20} color="#fff" />
-                                </LinearGradient>
-                                <View style={styles.transactionText}>
-                                    <Text style={styles.transactionTitle}>
-                                        Group Contribution
-                                    </Text>
-                                    <Text style={styles.transactionDate}>Sep 12, 2023</Text>
-                                </View>
-                            </View>
-                            <Text style={[styles.transactionAmount, { color: "#10b981" }]}>
-                                +£15,000.00
-                            </Text>
-                        </View>
-
-                        {/* Transaction: Monthly Payment (Debit) */}
-                        <View style={styles.transactionItem}>
-                            <View style={styles.transactionDetails}>
-                                <LinearGradient
-                                    colors={["#10b981", "#059669"]}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
-                                    style={styles.transactionIcon}
-                                >
-                                    <Ionicons name="arrow-up" size={20} color="#fff" />
-                                </LinearGradient>
-                                <View style={styles.transactionText}>
-                                    <Text style={styles.transactionTitle}>
-                                        Monthly Payment
-                                    </Text>
-                                    <Text style={styles.transactionDate}>Sep 10, 2023</Text>
-                                </View>
-                            </View>
-                            <Text style={[styles.transactionAmount, { color: "#f87171" }]}>
-                                -£500.00
-                            </Text>
-                        </View>
-                    </ScrollView>
-                </View>
-                    </>
-                )}
+                    {/* Bottom spacing */}
+                    <View style={styles.bottomSpacer} />
+                </ScrollView>
             </View>
         </SafeAreaProvider>
     );
 };
 
-// Cross-platform shadow styles
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const shadowStyles = Platform.select({
     ios: {
         shadowColor: "#000",
@@ -650,9 +593,17 @@ const shadowStyles = Platform.select({
     android: { elevation: 5 },
 });
 
-// Component styles
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#050508" },
+    container: {
+        flex: 1,
+        backgroundColor: "#050508",
+    },
+    scrollContent: {
+        flex: 1,
+    },
+    bottomSpacer: {
+        height: 30,
+    },
     loadingContainer: {
         flex: 1,
         justifyContent: "center",
@@ -665,12 +616,19 @@ const styles = StyleSheet.create({
         color: "#f1f0ff",
         fontWeight: "500",
     },
+
+    // Header - Fixed at top
     header: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        paddingTop: StatusBar.currentHeight || 40,
+        paddingTop: (StatusBar.currentHeight ?? 40) + 10,
         paddingHorizontal: 20,
+        paddingBottom: 10,
+        backgroundColor: "#050508",
+        borderBottomWidth: 1,
+        borderBottomColor: "rgba(123, 110, 246, 0.08)",
+        zIndex: 10,
     },
     headerContent: {
         flexDirection: "row",
@@ -682,12 +640,20 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: "column",
         alignItems: "flex-start",
-        marginTop: 10,
-        paddingVertical: 20,
+        paddingVertical: 10,
     },
-    title: { fontSize: 24, fontWeight: "700", color: "#f1f0ff" },
-    subtitle: { color: "#8b89a8" },
-    menuButton: { marginLeft: "auto" },
+    title: {
+        fontSize: 24,
+        fontWeight: "700",
+        color: "#f1f0ff",
+    },
+    subtitle: {
+        color: "#8b89a8",
+        marginTop: 4,
+    },
+    menuButton: {
+        marginLeft: "auto",
+    },
     hamburgerButton: {
         width: 42,
         height: 42,
@@ -705,24 +671,23 @@ const styles = StyleSheet.create({
         backgroundColor: "#f1f0ff",
         borderRadius: 1,
     },
+
+    // Stats Carousel
     balanceInfo: {
         paddingHorizontal: 20,
-        paddingVertical: 50,
-        marginHorizontal: 0,
-        marginVertical: 20,
+        paddingVertical: 10,
+        marginVertical: 10,
     },
     balanceScrollContent: {
         paddingRight: 20,
-        paddingLeft: 0,
         alignItems: "center",
         gap: 14,
     },
     statCard: {
         width: 120,
         height: 120,
-        padding: 0,
-        overflow: "hidden",
         borderRadius: 15,
+        overflow: "hidden",
     },
     statCardInner: {
         flex: 1,
@@ -731,10 +696,6 @@ const styles = StyleSheet.create({
         alignItems: "center",
         paddingHorizontal: 12,
         paddingVertical: 14,
-        borderRadius: 15,
-        ...shadowStyles,
-    },
-    statCardGradient: {
         borderRadius: 15,
     },
     statLabel: {
@@ -753,47 +714,28 @@ const styles = StyleSheet.create({
         textAlign: "center",
         lineHeight: 34,
     },
-    balanceCard: {
-        flex: 1,
-        backgroundColor: "#131318",
-        padding: 16,
-        borderRadius: 12,
-        borderLeftWidth: 4,
-        borderLeftColor: "#7b6ef6",
-    },
-    balanceCardSecondary: {
-        borderLeftColor: "#f59e0b",
-    },
-    balanceValue: {
-        fontSize: 20,
-        fontWeight: "700",
-        color: "#ffffff",
-        marginTop: 0,
-    },
-    balanceLabel: {
-        color: "#ffffff",
-        fontSize: 12,
-        fontWeight: "500",
-        marginBottom: 6,
-    },
-    contributedAmount: { color: "#ffffff" },
-    textRight: { textAlign: "right" },
-    tabHeaders: { flexDirection: "row", marginHorizontal: 20 },
+
+    // Tabs
     tabHeadersContainer: {
         flexDirection: "row",
         marginHorizontal: 20,
-        paddingBottom: 0,
         borderBottomWidth: 1,
         borderBottomColor: "rgba(123, 110, 246, 0.12)",
     },
-    tabButton: { 
-        paddingVertical: 12, 
+    tabButton: {
+        paddingVertical: 12,
         marginHorizontal: 5,
         paddingBottom: 16,
         position: "relative",
     },
-    tabText: { color: "#8b89a8", fontWeight: "600", fontSize: 13 },
-    activeTabText: { color: "#7b6ef6" },
+    tabText: {
+        color: "#8b89a8",
+        fontWeight: "600",
+        fontSize: 13,
+    },
+    activeTabText: {
+        color: "#7b6ef6",
+    },
     tabUnderline: {
         position: "absolute",
         bottom: -1,
@@ -803,7 +745,21 @@ const styles = StyleSheet.create({
         backgroundColor: "#7b6ef6",
         borderRadius: 1,
     },
-    horizontalScroll: { paddingVertical: 10, marginHorizontal: 20 },
+
+    // Groups
+    groupsContainer: {
+        backgroundColor: "#131318",
+        paddingVertical: 6,
+        marginHorizontal: 20,
+        marginVertical: 15,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: "rgba(123, 110, 246, 0.12)",
+    },
+    horizontalScroll: {
+        paddingVertical: 10,
+        marginHorizontal: 20,
+    },
     groupCard: {
         backgroundColor: "#1e1c35",
         padding: 18,
@@ -819,7 +775,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         marginBottom: 14,
     },
-    groupBadge: { 
+    groupBadge: {
         backgroundColor: "rgba(123, 110, 246, 0.2)",
         paddingHorizontal: 10,
         paddingVertical: 4,
@@ -832,6 +788,10 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: "700",
     },
+    statusContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
     statusIcon: {
         width: 22,
         height: 22,
@@ -839,11 +799,32 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
     },
+    warningIcon: {
+        backgroundColor: "#ff9800",
+    },
+    adminIcon: {
+        backgroundColor: semanticColors.buttonPrimary,
+        marginLeft: 6,
+    },
+    groupTitle: {
+        fontSize: 14,
+        fontWeight: "700",
+        color: "#f1f0ff",
+        lineHeight: 20,
+        marginBottom: 3,
+    },
     groupSubtitle: {
         fontSize: 11,
         color: "rgba(255, 255, 255, 0.5)",
         marginBottom: 10,
         fontWeight: "500",
+    },
+    groupAmount: {
+        fontSize: 20,
+        fontWeight: "800",
+        color: "#ffffff",
+        marginTop: 10,
+        marginBottom: 10,
     },
     progressBarContainer: {
         height: 5,
@@ -856,20 +837,6 @@ const styles = StyleSheet.create({
         height: "100%",
         backgroundColor: "#7b6ef6",
         borderRadius: 3,
-    },
-    groupAmount: {
-        fontSize: 20,
-        fontWeight: "800",
-        color: "#ffffff",
-        marginTop: 10,
-        marginBottom: 10,
-    },
-    groupTitle: {
-        fontSize: 14,
-        fontWeight: "700",
-        color: "#f1f0ff",
-        lineHeight: 20,
-        marginBottom: 3,
     },
     groupDetails: {
         flexDirection: "row",
@@ -895,8 +862,9 @@ const styles = StyleSheet.create({
         borderRadius: 50,
         justifyContent: "center",
         alignItems: "center",
-        ...shadowStyles,
     },
+
+    // Section Title
     sectionTitle: {
         fontSize: 18,
         fontWeight: "700",
@@ -904,81 +872,15 @@ const styles = StyleSheet.create({
         color: "#f1f0ff",
         paddingHorizontal: 20,
     },
-    boldText: { fontWeight: "bold" },
-    activityContainer: {
-        marginHorizontal: 20,
-        marginVertical: 20,
-        marginBottom: 30,
-        backgroundColor: "#131318",
-        borderRadius: 16,
-        paddingHorizontal: 20,
-        paddingVertical: 20,
-        ...shadowStyles,
+    boldText: {
+        fontWeight: "bold",
     },
-    activityHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 20,
-    },
-    activityTitle: {
-        fontSize: 20,
-        fontWeight: "700",
-        color: "#f1f0ff",
-    },
-    activityList: {
-        maxHeight: 350,
-    },
-    activityItem: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingVertical: 15,
-    },
-    activityItemBorder: {
-        borderBottomWidth: 1,
-        borderBottomColor: "rgba(155, 155, 155, 0.2)",
-    },
-    activityIcon: {
-        width: 50,
-        height: 50,
-        borderRadius: 12,
-        justifyContent: "center",
-        alignItems: "center",
-        marginRight: 15,
-    },
-    activityInfo: {
-        flex: 1,
-    },
-    activityItemName: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: "#f1f0ff",
-        marginBottom: 4,
-    },
-    activityStatus: {
-        fontSize: 14,
-        color: "#f87171",
-        fontWeight: "500",
-    },
-    activityAmount: {
-        fontSize: 18,
-        fontWeight: "700",
-        color: "#f1f0ff",
-    },
-    seeAllButton: {
-        marginTop: 15,
-        paddingVertical: 12,
-    },
-    seeAllText: {
-        color: "#7b6ef6",
-        fontSize: 14,
-        fontWeight: "600",
-    },
+
+    // Transactions
     transactionsList: {
         marginHorizontal: 5,
         marginVertical: 10,
         padding: 10,
-        maxHeight: 300,
     },
     transactionItem: {
         flexDirection: "row",
@@ -986,19 +888,17 @@ const styles = StyleSheet.create({
         alignItems: "center",
         paddingVertical: 16,
         paddingHorizontal: 18,
-        ...shadowStyles,
         marginBottom: 12,
         backgroundColor: "#131318",
         borderWidth: 1,
         borderColor: "rgba(123, 110, 246, 0.1)",
         borderRadius: 16,
     },
-    transactionItemBorder: {
-        borderBottomWidth: 0,
-        borderBottomColor: "#8b89a8",
-        borderRadius: 5,
+    transactionDetails: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 14,
     },
-    transactionDetails: { flexDirection: "row", alignItems: "center", gap: 14 },
     transactionIcon: {
         borderRadius: 14,
         width: 50,
@@ -1007,18 +907,25 @@ const styles = StyleSheet.create({
         alignItems: "center",
         flexShrink: 0,
     },
-    transactionText: { marginLeft: 15 },
+    transactionText: {
+        marginLeft: 15,
+    },
     transactionTitle: {
         fontSize: 14,
         fontWeight: "600",
         color: "#f1f0ff",
     },
-    transactionDate: { color: "#8b89a8", marginTop: 3, fontSize: 11 },
+    transactionDate: {
+        color: "#8b89a8",
+        marginTop: 3,
+        fontSize: 11,
+    },
     transactionAmount: {
         fontSize: 15,
         fontWeight: "700",
-        color: "#10b981",
     },
+
+    // Empty State
     noRecordContainer: {
         justifyContent: "center",
         alignItems: "center",
@@ -1031,16 +938,6 @@ const styles = StyleSheet.create({
         textAlign: "center",
         marginBottom: 10,
         fontWeight: "500",
-    },
-    groupsContainer: {
-        backgroundColor: "#131318",
-        paddingVertical: 6,
-        marginHorizontal: 20,
-        marginVertical: 15,
-        borderRadius: 18,
-        borderWidth: 1,
-        borderColor: "rgba(123, 110, 246, 0.12)",
-        ...shadowStyles,
     },
 });
 
