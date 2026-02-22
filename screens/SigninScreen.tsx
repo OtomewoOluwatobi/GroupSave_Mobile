@@ -49,10 +49,13 @@ const SigninScreen: React.FC = () => {
         };
         // Make API call to sign in
         try {
-            const apiUrl =  Constants.manifest?.extra?.API_URL;
+            const apiUrl =  Constants.expoConfig?.extra?.apiUrl;
             interface SigninResponse {
                 token: string;
                 user: any;
+            }
+            if (!apiUrl) {
+                throw new Error('API URL not configured');
             }
             const response = await axios.post<SigninResponse>(`${apiUrl}/auth/login`, userData);
 
@@ -77,6 +80,7 @@ const SigninScreen: React.FC = () => {
             }
         } catch (error: any) {
             // Handle different error scenarios
+            console.error('Login error:', error);
             if ((error as any).isAxiosError) {
                 const errorMessage = error.response?.data?.message
                     || error.response?.data?.error
@@ -85,7 +89,7 @@ const SigninScreen: React.FC = () => {
                 // Show error message using Toast or Alert
                 Dialog.show({
                     type: ALERT_TYPE.DANGER,
-                    title: 'Singin Error',
+                    title: 'Sign In Error',
                     textBody: errorMessage || 'An unknown error occurred.',
                     button: 'Close',
                 });
@@ -93,8 +97,8 @@ const SigninScreen: React.FC = () => {
                 // Handle network error or other unexpected errors
                 Dialog.show({
                     type: ALERT_TYPE.DANGER,
-                    title: 'Singin Error',
-                    textBody: 'Network error. Please check your connection.',
+                    title: 'Sign In Error',
+                    textBody: error.message || 'Network error. Please check your connection.',
                     button: 'Close',
                 });
             }

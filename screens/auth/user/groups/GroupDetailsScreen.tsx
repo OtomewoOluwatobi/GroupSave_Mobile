@@ -69,7 +69,7 @@ const GroupDetailsScreen = () => {
                 }
 
                 const response = await axios.get<{ data: Group }>(
-                    `${Constants.manifest?.extra?.API_URL}/user/group/${group_id}`,
+                    `${Constants.expoConfig?.extra?.apiUrl}/user/group/${group_id}`,
                     {
                         headers: {
                             'Authorization': `Bearer ${token}`,

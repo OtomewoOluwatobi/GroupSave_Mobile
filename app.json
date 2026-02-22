@@ -12,6 +12,12 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "statusBar": {
+      "barStyle": "light-content",
+      "backgroundColor": "transparent",
+      "hidden": false,
+      "translucent": true
+    },
     "ios": {
       "supportsTablet": true
     },

@@ -127,7 +127,7 @@ const CreateGroupScreen = () => {
 
         try {
             setSubmitting(true);
-            const apiUrl = Constants.manifest?.extra?.API_URL;
+            const apiUrl = Constants.expoConfig?.extra?.apiUrl;
             const token = await AsyncStorage.getItem("token");
 
             if (!token) {

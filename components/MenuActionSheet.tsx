@@ -63,7 +63,7 @@ const MenuActionSheet: React.FC<MenuActionSheetProps> = ({ actionSheetRef, onSig
 
 const styles = StyleSheet.create({
   container: { 
-    padding: 20 
+    padding: 10 
   },
   menuGrid: { 
     flexDirection: 'row', 
@@ -79,15 +79,15 @@ const styles = StyleSheet.create({
   menuGridText: { 
     marginTop: 5, 
     fontSize: 12, 
-    color: semanticColors.textDescription 
+    color: semanticColors.textSecondary 
   },
   menuItem: { 
-    paddingVertical: 10, 
+    paddingVertical: 0, 
     flexDirection: 'row', 
     alignItems: 'center' 
   },
   signOutButton: { 
-    marginTop: 20, 
+    marginTop: 10, 
     borderTopWidth: 1, 
     justifyContent: 'center', 
     borderTopColor: semanticColors.divider, 
