@@ -732,6 +732,19 @@ const CreateGroupScreen = () => {
             const data = await response.json();
 
             if (!response.ok) {
+                // Handle unauthorized (expired/invalid token)
+                if (response.status === 401) {
+                    await AsyncStorage.multiRemove(['token', 'user', 'tokenExpiresAt']);
+                    Dialog.show({
+                        type: ALERT_TYPE.DANGER,
+                        title: 'Session Expired',
+                        textBody: 'Your session has expired. Please login again.',
+                        button: 'Close',
+                    });
+                    navigation.navigate('Signin');
+                    return;
+                }
+
                 Dialog.show({
                     type: ALERT_TYPE.DANGER,
                     title: 'Failed to create group',
