@@ -70,6 +70,35 @@ const getInitials = (name?: string) =>
         .toUpperCase()
         .slice(0, 2);
 
+// ─── Masking Helpers for Privacy ──────────────────────────────────────────────
+
+const maskName = (name?: string): string => {
+    if (!name) return '***';
+    return name.split(' ').map(part => 
+        part.length > 1 ? part[0] + '*'.repeat(part.length - 1) : part
+    ).join(' ');
+};
+
+const maskMobile = (mobile?: string): string => {
+    if (!mobile) return '***';
+    if (mobile.length <= 4) return '***';
+    return '*'.repeat(mobile.length - 4) + mobile.slice(-4);
+};
+
+const maskEmail = (email?: string): string => {
+    if (!email) return '***';
+    const [local, domain] = email.split('@');
+    if (!domain) return '***';
+    const maskedLocal = local.length > 2 
+        ? local[0] + '*'.repeat(local.length - 1) 
+        : local[0] + '*';
+    const domainParts = domain.split('.');
+    const maskedDomain = domainParts[0].length > 2 
+        ? domainParts[0][0] + '*'.repeat(domainParts[0].length - 1) 
+        : domainParts[0][0] + '*';
+    return `${maskedLocal}@${maskedDomain}.${domainParts.slice(1).join('.')}`;
+};
+
 // ─── Shadow Styles ────────────────────────────────────────────────────────────
 
 const shadowStyles = Platform.select({
@@ -356,9 +385,13 @@ const chartStyles = StyleSheet.create({
 
 // ─── Member Card ──────────────────────────────────────────────────────────────
 
-const MemberCard = ({ user, payoutPosition }: { user: GroupUser; payoutPosition?: number }) => {
+const MemberCard = ({ user, payoutPosition, canViewDetails = true }: { user: GroupUser; payoutPosition?: number; canViewDetails?: boolean }) => {
     const isActive = user.pivot.is_active;
     const isAdmin = user.pivot.role?.toLowerCase() === 'admin';
+
+    const displayName = canViewDetails ? (user.name || 'Unnamed') : maskName(user.name);
+    const displayMobile = canViewDetails ? (user.mobile || 'N/A') : maskMobile(user.mobile);
+    const displayEmail = canViewDetails ? (user.email || 'N/A') : maskEmail(user.email);
 
     return (
         <View style={[memberStyles.card, shadowStyles]}>
@@ -381,9 +414,9 @@ const MemberCard = ({ user, payoutPosition }: { user: GroupUser; payoutPosition?
                 </Text>
             </View>
 
-            <Text style={memberStyles.name} numberOfLines={1}>{user.name || 'Unnamed'}</Text>
-            <Text style={memberStyles.sub} numberOfLines={1}>{user.mobile || 'N/A'}</Text>
-            <Text style={memberStyles.sub} numberOfLines={1}>{user.email || 'N/A'}</Text>
+            <Text style={memberStyles.name} numberOfLines={1}>{displayName}</Text>
+            <Text style={memberStyles.sub} numberOfLines={1}>{displayMobile}</Text>
+            <Text style={memberStyles.sub} numberOfLines={1}>{displayEmail}</Text>
 
             <View style={[
                 memberStyles.roleBadge,
@@ -811,6 +844,7 @@ const GroupDetailsScreen = () => {
                                         key={i}
                                         user={user}
                                         payoutPosition={user.pivot.payout_position}
+                                        canViewDetails={isInGroup}
                                     />
                                 ))}
                             </ScrollView>

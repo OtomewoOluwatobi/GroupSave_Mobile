@@ -523,7 +523,7 @@ const useDashboardData = (
 
     const signOut = useCallback(async () => {
         try {
-            await AsyncStorage.multiRemove(["token", "user"]);
+            await AsyncStorage.multiRemove(["token", "user", "tokenExpiresAt"]);
             navigation.reset({ index: 0, routes: [{ name: "Signin" }] });
         } catch (error) {
             console.error("Error signing out:", error);

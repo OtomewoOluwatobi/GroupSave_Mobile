@@ -53,6 +53,7 @@ const SigninScreen: React.FC = () => {
             interface SigninResponse {
                 token: string;
                 user: any;
+                expires_in: number;
             }
             if (!apiUrl) {
                 throw new Error('API URL not configured');
@@ -63,6 +64,10 @@ const SigninScreen: React.FC = () => {
                 // Store the token and user data
                 await AsyncStorage.setItem('token', response.data.token);
                 await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
+                
+                // Store token expiration time (current time + expires_in seconds)
+                const expiresAt = Date.now() + (response.data.expires_in * 1000);
+                await AsyncStorage.setItem('tokenExpiresAt', expiresAt.toString());
 
                 // Navigate to dashboard
                 navigation.reset({
