@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
         fontSize: 32,
         fontWeight: 'bold',
         marginBottom: 20,
-        color: semanticColors.buttonPrimaryText,
+        color: semanticColors.textPrimary,
     },
     container2: {
         width: '100%',
@@ -232,13 +232,13 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
         borderWidth: 1,
-        borderColor: semanticColors.containerBorder,
+        borderColor: semanticColors.textSecondary,
     },
     title: {
         fontSize: 18,
         marginVertical: 10,
         fontWeight: 'bold',
-        color: semanticColors.textHeading,
+        color: semanticColors.textPrimary,
     },
     titleAlign: {
         alignSelf: 'flex-start',
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
         textDecorationLine: 'underline',
     },
     gotAccount: {
-        color: semanticColors.textBody,
+        color: semanticColors.textDescription,
         fontSize: 14,
         marginTop: 20,
         alignSelf: 'center',
