@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
         width: '100%',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: semanticColors.containerBackground,
+        backgroundColor: 'rgb(255, 255, 255)',
         padding: 30,
         borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-start',
     },
     forgotPassword: {
-        color: semanticColors.linkColor,
+        color: semanticColors.textPrimary,
         fontSize: 14,
         marginTop: 10,
         alignSelf: 'flex-end',
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
         marginBottom: 5,
     },
     gotAccount_sub: {
-        color: semanticColors.warningBorder,
+        color: semanticColors.textPrimary,
         fontSize: 14,
         fontWeight: 'bold',
         textDecorationLine: 'underline',
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
         ...shadowStyles,
     },
     buttonText: {
-        color: semanticColors.buttonPrimaryText,
+        color: semanticColors.textPrimary,
         fontSize: 16,
     },
 });

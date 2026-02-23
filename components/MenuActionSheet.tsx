@@ -1,14 +1,23 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from "@expo/vector-icons";
-import ActionSheet, { ActionSheetRef } from "react-native-actions-sheet";
+import { Ionicons } from '@expo/vector-icons';
+import ActionSheet, { ActionSheetRef } from 'react-native-actions-sheet';
 import { semanticColors } from '../theme/semanticColors';
 
-interface MenuItemProps {
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface MenuItemConfig {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress?: () => void;
-  color?: string;
+  iconBg?: string;
+  iconColor?: string;
+  badge?: number;
+}
+
+interface MenuSection {
+  title?: string;
+  items: MenuItemConfig[];
 }
 
 interface MenuActionSheetProps {
@@ -16,86 +25,272 @@ interface MenuActionSheetProps {
   onSignOut: () => void;
 }
 
-const MenuItem: React.FC<MenuItemProps> = ({ icon, label, onPress, color = semanticColors.buttonPrimary }) => (
-  <TouchableOpacity style={styles.menuGridItem} onPress={onPress}>
-    <Ionicons name={icon} size={24} color={color} />
-    <Text style={styles.menuGridText}>{label}</Text>
+// ─── MenuItem ─────────────────────────────────────────────────────────────────
+
+const MenuItem: React.FC<MenuItemConfig> = ({
+  icon,
+  label,
+  onPress,
+  iconBg = semanticColors.accentLight,
+  iconColor = semanticColors.buttonPrimary,
+  badge,
+}) => (
+  <TouchableOpacity style={styles.item} onPress={onPress} activeOpacity={0.7}>
+    {/* Icon pill */}
+    <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
+      <Ionicons name={icon} size={20} color={iconColor} />
+      {badge !== undefined && badge > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{badge > 9 ? '9+' : badge}</Text>
+        </View>
+      )}
+    </View>
+
+    {/* Label */}
+    <Text style={styles.itemLabel}>{label}</Text>
   </TouchableOpacity>
 );
 
-const MenuActionSheet: React.FC<MenuActionSheetProps> = ({ actionSheetRef, onSignOut }) => {
-  const menuItems: MenuItemProps[][] = [
-    [
-      { icon: "cash-outline", label: "Deposite" },
-      { icon: "diamond-outline", label: "Points" },
-      { icon: "notifications-outline", label: "Notifications" },
-      { icon: "person-outline", label: "Profile" },
-    ],
-    [
-      { icon: "settings-outline", label: "Settings" },
-      { icon: "help-circle-outline", label: "Support" },
-      { icon: "gift-outline", label: "Referral" },
-      { icon: "document-text-outline", label: "History" },
-    ],
+// ─── MenuSection ──────────────────────────────────────────────────────────────
+
+const Section: React.FC<{ section: MenuSection }> = ({ section }) => (
+  <View style={styles.section}>
+    {section.title && (
+      <Text style={styles.sectionTitle}>{section.title}</Text>
+    )}
+    <View style={styles.grid}>
+      {section.items.map((item) => (
+        <MenuItem key={item.label} {...item} />
+      ))}
+    </View>
+  </View>
+);
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
+const MenuActionSheet: React.FC<MenuActionSheetProps> = ({
+  actionSheetRef,
+  onSignOut,
+}) => {
+  const sections: MenuSection[] = [
+    {
+      title: 'Finance',
+      items: [
+        {
+          icon: 'cash-outline',
+          label: 'Deposit',
+          iconBg: semanticColors.successLight,
+          iconColor: semanticColors.success,
+        },
+        {
+          icon: 'diamond-outline',
+          label: 'Points',
+          iconBg: semanticColors.warningLight,
+          iconColor: semanticColors.warning,
+        },
+        {
+          icon: 'notifications-outline',
+          label: 'Notifications',
+          iconBg: semanticColors.accentLight,
+          iconColor: semanticColors.buttonPrimary,
+          badge: 3,
+        },
+        {
+          icon: 'person-outline',
+          label: 'Profile',
+          iconBg: 'rgba(99,102,241,0.12)',
+          iconColor: semanticColors.buttonSecondary,
+        },
+      ],
+    },
+    {
+      title: 'Account',
+      items: [
+        {
+          icon: 'settings-outline',
+          label: 'Settings',
+          iconBg: 'rgba(107,114,128,0.12)',
+          iconColor: semanticColors.badgeNeutral,
+        },
+        {
+          icon: 'help-circle-outline',
+          label: 'Support',
+          iconBg: semanticColors.infoLight,
+          iconColor: semanticColors.info,
+        },
+        {
+          icon: 'gift-outline',
+          label: 'Referral',
+          iconBg: 'rgba(236,72,153,0.12)',
+          iconColor: semanticColors.badgePink,
+        },
+        {
+          icon: 'document-text-outline',
+          label: 'History',
+          iconBg: semanticColors.accentLight,
+          iconColor: semanticColors.buttonPrimary,
+        },
+      ],
+    },
   ];
 
   return (
-    <ActionSheet ref={actionSheetRef}>
+    <ActionSheet
+      ref={actionSheetRef}
+      gestureEnabled
+      containerStyle={styles.sheet}
+      indicatorStyle={styles.indicator}
+    >
       <View style={styles.container}>
-        {menuItems.map((group, index) => (
-          <View key={index} style={styles.menuGrid}>
-            {group.map((item) => (
-              <MenuItem key={item.label} {...item} />
-            ))}
-          </View>
+        {/* Handle + top label */}
+        <Text style={styles.sheetHeading}>Menu</Text>
+
+        {/* Sections */}
+        {sections.map((section, i) => (
+          <Section key={i} section={section} />
         ))}
+
+        {/* Divider */}
+        <View style={styles.divider} />
+
+        {/* Sign Out */}
         <TouchableOpacity
-          style={[styles.menuItem, styles.signOutButton]}
+          style={styles.signOut}
           onPress={onSignOut}
+          activeOpacity={0.75}
         >
-          <Ionicons name="log-out-outline" size={24} color="red" />
-          <Text style={styles.signOutText}>Sign Out</Text>
+          <View style={styles.signOutIconWrap}>
+            <Ionicons name="log-out-outline" size={20} color={semanticColors.danger} />
+          </View>
+          <Text style={styles.signOutLabel}>Sign Out</Text>
+          <Ionicons
+            name="chevron-forward-outline"
+            size={16}
+            color={semanticColors.dangerLight}
+            style={{ marginLeft: 'auto' }}
+          />
         </TouchableOpacity>
       </View>
     </ActionSheet>
   );
 };
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  container: { 
-    padding: 10 
+  sheet: {
+    backgroundColor: semanticColors.containerBackground,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
   },
-  menuGrid: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
-    justifyContent: 'space-between', 
-    marginVertical: 10 
+  indicator: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    width: 40,
   },
-  menuGridItem: { 
-    alignItems: 'center', 
-    width: '25%', 
-    marginVertical: 10 
+  container: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 10,
   },
-  menuGridText: { 
-    marginTop: 5, 
-    fontSize: 12, 
-    color: semanticColors.textSecondary 
+  sheetHeading: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: semanticColors.textSecondary,
+    textAlign: 'center',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginBottom: 20,
+    marginTop: 4,
   },
-  menuItem: { 
-    paddingVertical: 0, 
-    flexDirection: 'row', 
-    alignItems: 'center' 
+
+  // ── Section ──
+  section: {
+    marginBottom: 8,
   },
-  signOutButton: { 
-    marginTop: 10, 
-    borderTopWidth: 1, 
-    justifyContent: 'center', 
-    borderTopColor: semanticColors.divider, 
-    paddingTop: 20 
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: semanticColors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 12,
+    marginLeft: 4,
   },
-  signOutText: { 
-    color: semanticColors.dangerText, 
-    marginLeft: 10 
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+
+  // ── Item ──
+  item: {
+    width: '25%',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  iconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  itemLabel: {
+    marginTop: 7,
+    fontSize: 11,
+    fontWeight: '500',
+    color: semanticColors.textDescription,
+    textAlign: 'center',
+  },
+
+  // ── Badge ──
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: semanticColors.danger,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeText: {
+    color: semanticColors.textInverse,
+    fontSize: 9,
+    fontWeight: '700',
+  },
+
+  // ── Divider ──
+  divider: {
+    height: 1,
+    backgroundColor: semanticColors.divider,
+    marginVertical: 16,
+  },
+
+  // ── Sign Out ──
+  signOut: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 5,
+    paddingHorizontal: 4,
+  },
+  signOutIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: semanticColors.dangerLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignContent: 'center',
+  },
+  signOutLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    alignItems: 'center',
+    color: semanticColors.danger,
   },
 });
 

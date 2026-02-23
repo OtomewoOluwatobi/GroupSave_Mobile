@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, {
+    useState,
+    useEffect,
+    useRef,
+    useCallback,
+    useMemo,
+} from "react";
 import {
     View,
     Text,
@@ -153,16 +159,38 @@ const StatCard: React.FC<StatCardConfig> = ({ label, value, colors }) => (
     </View>
 );
 
-const StatsCarousel: React.FC<{ stats: DashboardStats | null }> = ({ stats }) => {
+const StatsCarousel: React.FC<{ stats: DashboardStats | null }> = ({
+    stats,
+}) => {
     const statCards: StatCardConfig[] = useMemo(
         () => [
-            { label: "Total Groups", value: stats?.total_groups ?? 0, colors: ["#7b6ef6", "#5b4de0"] as const },
-            { label: "Owned Groups", value: stats?.owned_groups ?? 0, colors: ["#6366f1", "#4338ca"] as const },
-            { label: "Member Groups", value: stats?.member_groups ?? 0, colors: ["#8b5cf6", "#6d28d9"] as const },
-            { label: "Active Groups", value: stats?.active_groups ?? 0, colors: ["#10b981", "#059669"] as const },
-            { label: "Pending Invites", value: stats?.pending_invitations ?? 0, colors: ["#f59e0b", "#d97706"] as const },
+            {
+                label: "Total Groups",
+                value: stats?.total_groups ?? 0,
+                colors: semanticColors.gradientPrimary,
+            },
+            {
+                label: "Owned Groups",
+                value: stats?.owned_groups ?? 0,
+                colors: semanticColors.gradientSecondary,
+            },
+            {
+                label: "Member Groups",
+                value: stats?.member_groups ?? 0,
+                colors: semanticColors.gradientPurple,
+            },
+            {
+                label: "Active Groups",
+                value: stats?.active_groups ?? 0,
+                colors: semanticColors.gradientSuccess,
+            },
+            {
+                label: "Pending Invites",
+                value: stats?.pending_invitations ?? 0,
+                colors: semanticColors.gradientWarning,
+            },
         ],
-        [stats]
+        [stats],
     );
 
     return (
@@ -181,7 +209,9 @@ const StatsCarousel: React.FC<{ stats: DashboardStats | null }> = ({ stats }) =>
 
 const ProgressBar: React.FC<{ progress: number }> = ({ progress }) => (
     <View style={styles.progressBarContainer}>
-        <View style={[styles.progressBar, { width: `${Math.min(progress, 100)}%` }]} />
+        <View
+            style={[styles.progressBar, { width: `${Math.min(progress, 100)}%` }]}
+        />
     </View>
 );
 
@@ -190,7 +220,10 @@ const GroupCard: React.FC<{
     onPress?: () => void;
     showStatus?: boolean;
 }> = ({ group, onPress, showStatus = false }) => {
-    const memberProgress = calculateProgress(group.active_members, group.total_members);
+    const memberProgress = calculateProgress(
+        group.active_members,
+        group.total_members,
+    );
 
     return (
         <TouchableOpacity
@@ -200,18 +233,28 @@ const GroupCard: React.FC<{
         >
             <View style={styles.groupCardHeader}>
                 <View style={styles.groupBadge}>
-                    <Text style={styles.groupBadgeText}>{Math.round(memberProgress)}%</Text>
+                    <Text style={styles.groupBadgeText}>
+                        {Math.round(memberProgress)}%
+                    </Text>
                 </View>
                 {showStatus && (
                     <View style={styles.statusContainer}>
                         {!group.is_active && (
                             <View style={[styles.statusIcon, styles.warningIcon]}>
-                                <Ionicons name="warning" size={12} color="#fff" />
+                                <Ionicons
+                                    name="warning"
+                                    size={12}
+                                    color={semanticColors.textInverse}
+                                />
                             </View>
                         )}
                         {group.user_role === "admin" && (
                             <View style={[styles.statusIcon, styles.adminIcon]}>
-                                <Ionicons name="shield" size={12} color="#fff" />
+                                <Ionicons
+                                    name="shield"
+                                    size={12}
+                                    color={semanticColors.textInverse}
+                                />
                             </View>
                         )}
                     </View>
@@ -260,7 +303,11 @@ const AddGroupButton: React.FC<{ onPress: () => void }> = ({ onPress }) => (
         style={[styles.addGroupButton, shadowStyles]}
         activeOpacity={0.8}
     >
-        <MaterialIcons name="format-list-bulleted-add" size={30} color="#fff" />
+        <MaterialIcons
+            name="format-list-bulleted-add"
+            size={30}
+            color={semanticColors.textInverse}
+        />
     </TouchableOpacity>
 );
 
@@ -288,7 +335,9 @@ const TabHeader: React.FC<{
                     onPress={() => onTabChange(key)}
                     activeOpacity={0.7}
                 >
-                    <Text style={[styles.tabText, activeTab === key && styles.activeTabText]}>
+                    <Text
+                        style={[styles.tabText, activeTab === key && styles.activeTabText]}
+                    >
                         {label}
                     </Text>
                     {activeTab === key && <View style={styles.tabUnderline} />}
@@ -316,7 +365,7 @@ const TransactionItem: React.FC<{
                 <Ionicons
                     name={type === "credit" ? "arrow-down" : "arrow-up"}
                     size={20}
-                    color="#fff"
+                    color={semanticColors.textInverse}
                 />
             </LinearGradient>
             <View style={styles.transactionText}>
@@ -327,10 +376,14 @@ const TransactionItem: React.FC<{
         <Text
             style={[
                 styles.transactionAmount,
-                { color: type === "credit" ? "#10b981" : "#f87171" },
+                {
+                    color:
+                        type === "credit" ? semanticColors.success : semanticColors.danger,
+                },
             ]}
         >
-            {type === "credit" ? "+" : "-"}{amount}
+            {type === "credit" ? "+" : "-"}
+            {amount}
         </Text>
     </View>
 );
@@ -338,13 +391,48 @@ const TransactionItem: React.FC<{
 const TransactionsList: React.FC = () => {
     const transactions = useMemo(
         () => [
-            { id: 1, title: "Group Contribution", date: "Oct 12, 2023", amount: "£15,000.00", type: "credit" as const, colors: ["#7b6ef6", "#a78bfa"] as const },
-            { id: 2, title: "Monthly Payment", date: "Oct 10, 2023", amount: "£500.00", type: "debit" as const, colors: ["#10b981", "#059669"] as const },
-            { id: 3, title: "Payout Received", date: "Sep 28, 2023", amount: "£6,000.00", type: "credit" as const, colors: ["#f59e0b", "#d97706"] as const },
-            { id: 4, title: "Group Contribution", date: "Sep 12, 2023", amount: "£15,000.00", type: "credit" as const, colors: ["#7b6ef6", "#a78bfa"] as const },
-            { id: 5, title: "Monthly Payment", date: "Sep 10, 2023", amount: "£500.00", type: "debit" as const, colors: ["#10b981", "#059669"] as const },
+            {
+                id: 1,
+                title: "Group Contribution",
+                date: "Oct 12, 2023",
+                amount: "£15,000.00",
+                type: "credit" as const,
+                colors: semanticColors.gradientPrimary,
+            },
+            {
+                id: 2,
+                title: "Monthly Payment",
+                date: "Oct 10, 2023",
+                amount: "£500.00",
+                type: "debit" as const,
+                colors: semanticColors.gradientSuccess,
+            },
+            {
+                id: 3,
+                title: "Payout Received",
+                date: "Sep 28, 2023",
+                amount: "£6,000.00",
+                type: "credit" as const,
+                colors: semanticColors.gradientWarning,
+            },
+            {
+                id: 4,
+                title: "Group Contribution",
+                date: "Sep 12, 2023",
+                amount: "£15,000.00",
+                type: "credit" as const,
+                colors: semanticColors.gradientPrimary,
+            },
+            {
+                id: 5,
+                title: "Monthly Payment",
+                date: "Sep 10, 2023",
+                amount: "£500.00",
+                type: "debit" as const,
+                colors: semanticColors.gradientSuccess,
+            },
         ],
-        []
+        [],
     );
 
     return (
@@ -365,7 +453,9 @@ const TransactionsList: React.FC = () => {
 
 // ─── Custom Hooks ─────────────────────────────────────────────────────────────
 
-const useDashboardData = (navigation: NativeStackNavigationProp<RootStackParamList>) => {
+const useDashboardData = (
+    navigation: NativeStackNavigationProp<RootStackParamList>,
+) => {
     const [user, setUser] = useState<User | null>(null);
     const [topGroups, setTopGroups] = useState<Group[]>([]);
     const [myGroups, setMyGroups] = useState<Group[]>([]);
@@ -373,61 +463,63 @@ const useDashboardData = (navigation: NativeStackNavigationProp<RootStackParamLi
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
-    const fetchData = useCallback(async (isRefresh = false) => {
-        try {
-            if (isRefresh) setRefreshing(true);
-            else setLoading(true);
+    const fetchData = useCallback(
+        async (isRefresh = false) => {
+            try {
+                if (isRefresh) setRefreshing(true);
+                else setLoading(true);
 
-            const userData = await AsyncStorage.getItem("user");
-            if (userData) setUser(JSON.parse(userData));
+                const userData = await AsyncStorage.getItem("user");
+                if (userData) setUser(JSON.parse(userData));
 
-            const token = await AsyncStorage.getItem("token");
-            if (!token) {
-                console.error("❌ No authentication token found.");
-                navigation.reset({ index: 0, routes: [{ name: "Signin" }] });
-                return;
-            }
-
-            const apiUrl = Constants.expoConfig?.extra?.apiUrl;
-            if (!apiUrl) {
-                console.error("❌ API URL not configured in app.json");
-                return;
-            }
-
-            const response = await axios.get<DashboardResponse>(
-                `${apiUrl}/user/dashboard`,
-                {
-                    headers: {
-                        Accept: "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
+                const token = await AsyncStorage.getItem("token");
+                if (!token) {
+                    console.error("❌ No authentication token found.");
+                    navigation.reset({ index: 0, routes: [{ name: "Signin" }] });
+                    return;
                 }
-            );
 
-            const {
-                suggested_groups = [],
-                user_groups = [],
-                stats: dashboardStats = {},
-                user: apiUser = null,
-            } = response.data;
+                const apiUrl = Constants.expoConfig?.extra?.apiUrl;
+                if (!apiUrl) {
+                    console.error("❌ API URL not configured in app.json");
+                    return;
+                }
 
-            setTopGroups(suggested_groups);
-            setMyGroups(user_groups);
-            setStats(dashboardStats);
-            if (apiUser) setUser(apiUser);
+                const response = await axios.get<DashboardResponse>(
+                    `${apiUrl}/user/dashboard`,
+                    {
+                        headers: {
+                            Accept: "application/json",
+                            Authorization: `Bearer ${token}`,
+                        },
+                    },
+                );
 
-        } catch (error: any) {
-            console.error("❌ Error fetching dashboard data:", error.message);
+                const {
+                    suggested_groups = [],
+                    user_groups = [],
+                    stats: dashboardStats = {},
+                    user: apiUser = null,
+                } = response.data;
 
-            if (error.response?.status === 401) {
-                await AsyncStorage.multiRemove(["token", "user"]);
-                navigation.reset({ index: 0, routes: [{ name: "Signin" }] });
+                setTopGroups(suggested_groups);
+                setMyGroups(user_groups);
+                setStats(dashboardStats);
+                if (apiUser) setUser(apiUser);
+            } catch (error: any) {
+                console.error("❌ Error fetching dashboard data:", error.message);
+
+                if (error.response?.status === 401) {
+                    await AsyncStorage.multiRemove(["token", "user"]);
+                    navigation.reset({ index: 0, routes: [{ name: "Signin" }] });
+                }
+            } finally {
+                setLoading(false);
+                setRefreshing(false);
             }
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    }, [navigation]);
+        },
+        [navigation],
+    );
 
     const signOut = useCallback(async () => {
         try {
@@ -457,7 +549,8 @@ const useDashboardData = (navigation: NativeStackNavigationProp<RootStackParamLi
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const DashboardScreen: React.FC = () => {
-    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    const navigation =
+        useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const actionSheetRef = useRef<ActionSheetRef>(null);
     const [activeTab, setActiveTab] = useState<TabType>("topGroups");
 
@@ -485,7 +578,7 @@ const DashboardScreen: React.FC = () => {
         (groupId: number) => {
             navigation.navigate("GroupDetails", { group_id: groupId });
         },
-        [navigation]
+        [navigation],
     );
 
     const handleCreateGroup = useCallback(() => {
@@ -497,28 +590,39 @@ const DashboardScreen: React.FC = () => {
             return <EmptyState message="No groups found" />;
         }
         return topGroups.map((group) => (
-            <GroupCard key={group.id} group={group} />
+            <GroupCard
+                key={group.id}
+                group={group}
+                onPress={() => handleGroupPress(group.id)}
+            />
         ));
-    }, [topGroups]);
+    }, [topGroups, handleGroupPress]);
 
-    const renderMyGroups = useMemo(() => (
-        <>
-            {myGroups.map((group) => (
-                <GroupCard
-                    key={group.id}
-                    group={group}
-                    showStatus
-                    onPress={() => handleGroupPress(group.id)}
-                />
-            ))}
-            <AddGroupButton onPress={handleCreateGroup} />
-        </>
-    ), [myGroups, handleGroupPress, handleCreateGroup]);
+    const renderMyGroups = useMemo(
+        () => (
+            <>
+                {myGroups.map((group) => (
+                    <GroupCard
+                        key={group.id}
+                        group={group}
+                        showStatus
+                        onPress={() => handleGroupPress(group.id)}
+                    />
+                ))}
+                <AddGroupButton onPress={handleCreateGroup} />
+            </>
+        ),
+        [myGroups, handleGroupPress, handleCreateGroup],
+    );
 
     if (loading) {
         return (
             <SafeAreaProvider>
-                <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+                <StatusBar
+                    barStyle="light-content"
+                    backgroundColor="transparent"
+                    translucent
+                />
                 <View style={styles.container}>
                     <LoadingView />
                 </View>
@@ -528,7 +632,11 @@ const DashboardScreen: React.FC = () => {
 
     return (
         <SafeAreaProvider>
-            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+            <StatusBar
+                barStyle="light-content"
+                backgroundColor="transparent"
+                translucent
+            />
             <View style={styles.container}>
                 {/* Fixed Header */}
                 <Header userName={user?.name} onMenuPress={handleMenuPress} />
@@ -585,7 +693,7 @@ const DashboardScreen: React.FC = () => {
 
 const shadowStyles = Platform.select({
     ios: {
-        shadowColor: "#000",
+        shadowColor: semanticColors.shadowColor,
         shadowOffset: { width: 2, height: 3 },
         shadowOpacity: 0.25,
         shadowRadius: 3.84,
@@ -596,7 +704,7 @@ const shadowStyles = Platform.select({
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#050508",
+        backgroundColor: semanticColors.background,
     },
     scrollContent: {
         flex: 1,
@@ -608,12 +716,12 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#050508",
+        backgroundColor: semanticColors.background,
     },
     loadingText: {
         marginTop: 12,
         fontSize: 16,
-        color: "#f1f0ff",
+        color: semanticColors.textPrimary,
         fontWeight: "500",
     },
 
@@ -625,9 +733,9 @@ const styles = StyleSheet.create({
         paddingTop: (StatusBar.currentHeight ?? 40) + 10,
         paddingHorizontal: 20,
         paddingBottom: 10,
-        backgroundColor: "#050508",
+        backgroundColor: semanticColors.background,
         borderBottomWidth: 1,
-        borderBottomColor: "rgba(123, 110, 246, 0.08)",
+        borderBottomColor: semanticColors.borderLight,
         zIndex: 10,
     },
     headerContent: {
@@ -645,10 +753,10 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: "700",
-        color: "#f1f0ff",
+        color: semanticColors.textPrimary,
     },
     subtitle: {
-        color: "#8b89a8",
+        color: semanticColors.textSecondary,
         marginTop: 4,
     },
     menuButton: {
@@ -657,10 +765,10 @@ const styles = StyleSheet.create({
     hamburgerButton: {
         width: 42,
         height: 42,
-        backgroundColor: "#131318",
+        backgroundColor: semanticColors.containerBackground,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: "rgba(123, 110, 246, 0.15)",
+        borderColor: semanticColors.border,
         justifyContent: "center",
         alignItems: "center",
         gap: 5,
@@ -668,14 +776,14 @@ const styles = StyleSheet.create({
     hamburgerLine: {
         width: 18,
         height: 2,
-        backgroundColor: "#f1f0ff",
+        backgroundColor: semanticColors.textPrimary,
         borderRadius: 1,
     },
 
     // Stats Carousel
     balanceInfo: {
         paddingHorizontal: 20,
-        paddingVertical: 10,
+        paddingVertical: 30,
         marginVertical: 10,
     },
     balanceScrollContent: {
@@ -708,7 +816,7 @@ const styles = StyleSheet.create({
         lineHeight: 15,
     },
     statValue: {
-        color: "#ffffff",
+        color: semanticColors.textInverse,
         fontSize: 28,
         fontWeight: "800",
         textAlign: "center",
@@ -720,7 +828,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         marginHorizontal: 20,
         borderBottomWidth: 1,
-        borderBottomColor: "rgba(123, 110, 246, 0.12)",
+        borderBottomColor: semanticColors.borderLight,
     },
     tabButton: {
         paddingVertical: 12,
@@ -729,12 +837,12 @@ const styles = StyleSheet.create({
         position: "relative",
     },
     tabText: {
-        color: "#8b89a8",
+        color: semanticColors.textSecondary,
         fontWeight: "600",
         fontSize: 13,
     },
     activeTabText: {
-        color: "#7b6ef6",
+        color: semanticColors.buttonPrimary,
     },
     tabUnderline: {
         position: "absolute",
@@ -742,32 +850,32 @@ const styles = StyleSheet.create({
         left: 5,
         right: 5,
         height: 2,
-        backgroundColor: "#7b6ef6",
+        backgroundColor: semanticColors.buttonPrimary,
         borderRadius: 1,
     },
 
     // Groups
     groupsContainer: {
-        backgroundColor: "#131318",
+        backgroundColor: semanticColors.containerBackground,
         paddingVertical: 6,
         marginHorizontal: 20,
         marginVertical: 15,
         borderRadius: 18,
         borderWidth: 1,
-        borderColor: "rgba(123, 110, 246, 0.12)",
+        borderColor: semanticColors.borderLight,
     },
     horizontalScroll: {
         paddingVertical: 10,
         marginHorizontal: 20,
     },
     groupCard: {
-        backgroundColor: "#1e1c35",
+        backgroundColor: semanticColors.cardBackground,
         padding: 18,
         marginRight: 15,
         width: 195,
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: "rgba(123, 110, 246, 0.15)",
+        borderColor: semanticColors.border,
     },
     groupCardHeader: {
         flexDirection: "row",
@@ -776,15 +884,15 @@ const styles = StyleSheet.create({
         marginBottom: 14,
     },
     groupBadge: {
-        backgroundColor: "rgba(123, 110, 246, 0.2)",
+        backgroundColor: semanticColors.accentLight,
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: "rgba(123, 110, 246, 0.2)",
+        borderColor: semanticColors.accentLight,
     },
     groupBadgeText: {
-        color: "#a78bfa",
+        color: semanticColors.accent,
         fontSize: 11,
         fontWeight: "700",
     },
@@ -800,7 +908,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     warningIcon: {
-        backgroundColor: "#ff9800",
+        backgroundColor: semanticColors.warning,
     },
     adminIcon: {
         backgroundColor: semanticColors.buttonPrimary,
@@ -809,33 +917,33 @@ const styles = StyleSheet.create({
     groupTitle: {
         fontSize: 14,
         fontWeight: "700",
-        color: "#f1f0ff",
+        color: semanticColors.textPrimary,
         lineHeight: 20,
         marginBottom: 3,
     },
     groupSubtitle: {
         fontSize: 11,
-        color: "rgba(255, 255, 255, 0.5)",
+        color: semanticColors.textMuted,
         marginBottom: 10,
         fontWeight: "500",
     },
     groupAmount: {
         fontSize: 20,
         fontWeight: "800",
-        color: "#ffffff",
+        color: semanticColors.textInverse,
         marginTop: 10,
         marginBottom: 10,
     },
     progressBarContainer: {
         height: 5,
-        backgroundColor: "rgba(255, 255, 255, 0.1)",
+        backgroundColor: semanticColors.progressBackground,
         borderRadius: 3,
         marginVertical: 14,
         overflow: "hidden",
     },
     progressBar: {
         height: "100%",
-        backgroundColor: "#7b6ef6",
+        backgroundColor: semanticColors.progressFill,
         borderRadius: 3,
     },
     groupDetails: {
@@ -843,7 +951,7 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
     },
     groupDetailLabel: {
-        color: "rgba(255, 255, 255, 0.4)",
+        color: semanticColors.iconMuted,
         fontSize: 10,
         marginBottom: 3,
     },
@@ -853,7 +961,7 @@ const styles = StyleSheet.create({
         fontWeight: "600",
     },
     addGroupButton: {
-        backgroundColor: "#7b6ef6",
+        backgroundColor: semanticColors.buttonPrimary,
         padding: 15,
         marginRight: 15,
         height: 70,
@@ -869,7 +977,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: "700",
         marginVertical: 5,
-        color: "#f1f0ff",
+        color: semanticColors.textPrimary,
         paddingHorizontal: 20,
     },
     boldText: {
@@ -889,9 +997,9 @@ const styles = StyleSheet.create({
         paddingVertical: 16,
         paddingHorizontal: 18,
         marginBottom: 12,
-        backgroundColor: "#131318",
+        backgroundColor: semanticColors.containerBackground,
         borderWidth: 1,
-        borderColor: "rgba(123, 110, 246, 0.1)",
+        borderColor: semanticColors.borderLight,
         borderRadius: 16,
     },
     transactionDetails: {
@@ -913,10 +1021,10 @@ const styles = StyleSheet.create({
     transactionTitle: {
         fontSize: 14,
         fontWeight: "600",
-        color: "#f1f0ff",
+        color: semanticColors.textPrimary,
     },
     transactionDate: {
-        color: "#8b89a8",
+        color: semanticColors.textSecondary,
         marginTop: 3,
         fontSize: 11,
     },
@@ -934,7 +1042,7 @@ const styles = StyleSheet.create({
     },
     noRecordText: {
         fontSize: 16,
-        color: "#8b89a8",
+        color: semanticColors.textSecondary,
         textAlign: "center",
         marginBottom: 10,
         fontWeight: "500",
