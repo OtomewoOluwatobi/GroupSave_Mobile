@@ -13,6 +13,7 @@ import SignupScreen from './screens/SignupScreen';
 import DashboardScreen from './screens/auth/user/DashboardScreen';
 import CreateGroupScreen from './screens/auth/user/groups/CreateGroupScreen';
 import GroupDetailsScreen from './screens/auth/user/groups/GroupDetailsScreen';
+import NotificationsScreen from './screens/auth/user/NotificationsScreen';
 
 type RootStackParamList = {
   Home: undefined;
@@ -21,6 +22,7 @@ type RootStackParamList = {
   Dashboard: undefined;
   CreateGroup: undefined;
   GroupDetails: undefined;
+  Notifications: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -228,6 +230,13 @@ export default function App() {
               <Stack.Screen
                 name="GroupDetails"
                 component={GroupDetailsScreen}
+                options={{
+                  headerShown: false
+                }}
+              />
+              <Stack.Screen
+                name="Notifications"
+                component={NotificationsScreen}
                 options={{
                   headerShown: false
                 }}

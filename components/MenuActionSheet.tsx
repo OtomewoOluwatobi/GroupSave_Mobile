@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ActionSheet, { ActionSheetRef } from 'react-native-actions-sheet';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { semanticColors } from '../theme/semanticColors';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -74,6 +76,13 @@ const MenuActionSheet: React.FC<MenuActionSheetProps> = ({
   onSignOut,
   unreadNotifications = 0,
 }) => {
+  const navigation = useNavigation<NativeStackNavigationProp<any>>();
+
+  const handleNotifications = () => {
+    actionSheetRef.current?.hide();
+    navigation.navigate('Notifications');
+  };
+
   const sections: MenuSection[] = [
     {
       title: 'Finance',
@@ -96,6 +105,7 @@ const MenuActionSheet: React.FC<MenuActionSheetProps> = ({
           iconBg: semanticColors.accentLight,
           iconColor: semanticColors.buttonPrimary,
           badge: unreadNotifications,
+          onPress: handleNotifications,
         },
         {
           icon: 'person-outline',
