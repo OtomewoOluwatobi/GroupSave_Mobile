@@ -58,6 +58,7 @@ interface DashboardStats {
     member_groups?: number;
     active_groups?: number;
     pending_invitations?: number;
+    unread_notifications?: number;
 }
 
 interface User {
@@ -644,6 +645,7 @@ const DashboardScreen: React.FC = () => {
                 <MenuActionSheet
                     actionSheetRef={actionSheetRef as React.RefObject<ActionSheetRef>}
                     onSignOut={handleSignOut}
+                    unreadNotifications={stats?.unread_notifications ?? 0}
                 />
 
                 {/* Scrollable Content */}

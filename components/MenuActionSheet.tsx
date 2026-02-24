@@ -23,6 +23,7 @@ interface MenuSection {
 interface MenuActionSheetProps {
   actionSheetRef: React.RefObject<ActionSheetRef>;
   onSignOut: () => void;
+  unreadNotifications?: number;
 }
 
 // ─── MenuItem ─────────────────────────────────────────────────────────────────
@@ -71,6 +72,7 @@ const Section: React.FC<{ section: MenuSection }> = ({ section }) => (
 const MenuActionSheet: React.FC<MenuActionSheetProps> = ({
   actionSheetRef,
   onSignOut,
+  unreadNotifications = 0,
 }) => {
   const sections: MenuSection[] = [
     {
@@ -93,7 +95,7 @@ const MenuActionSheet: React.FC<MenuActionSheetProps> = ({
           label: 'Notifications',
           iconBg: semanticColors.accentLight,
           iconColor: semanticColors.buttonPrimary,
-          badge: 3,
+          badge: unreadNotifications,
         },
         {
           icon: 'person-outline',
