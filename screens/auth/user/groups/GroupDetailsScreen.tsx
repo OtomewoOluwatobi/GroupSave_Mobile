@@ -130,52 +130,63 @@ const CircleProgress = ({
 }) => {
     const half = size / 2;
     const clamp = Math.min(100, Math.max(0, percent));
-    const rightDeg = clamp > 50 ? 180 : clamp * 3.6;
-    const leftDeg = clamp > 50 ? (clamp - 50) * 3.6 : 0;
+
+    // Calculate rotation for each half
+    // Right half handles 0-50%, left half handles 50-100%
+    // Each half rotates 0-180deg for its portion
+    const rightRotation = clamp <= 50 ? (clamp / 50) * 180 : 180;
+    const leftRotation = clamp > 50 ? ((clamp - 50) / 50) * 180 : 0;
 
     return (
         <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-            {/* Track */}
+            {/* Track (background circle) */}
             <View style={{
                 position: 'absolute', width: size, height: size,
                 borderRadius: half, borderWidth: strokeWidth, borderColor: trackColor,
             }} />
 
-            {/* Right slice (0–50%) */}
+            {/* Right half progress (0-50%) - clips to right side */}
             <View style={{
-                position: 'absolute', width: size, height: size,
-                borderRadius: half, overflow: 'hidden',
+                position: 'absolute',
+                width: half,
+                height: size,
+                left: half,
+                overflow: 'hidden',
             }}>
                 <View style={{
-                    position: 'absolute', left: half, top: 0,
-                    width: half, height: size, overflow: 'hidden',
-                }}>
-                    <View style={{
-                        position: 'absolute', left: -half, top: 0,
-                        width: size, height: size, borderRadius: half,
-                        borderWidth: strokeWidth, borderColor: color,
-                        transform: [{ rotate: `${rightDeg}deg` }],
-                    }} />
-                </View>
+                    width: size,
+                    height: size,
+                    marginLeft: -half,
+                    borderRadius: half,
+                    borderWidth: strokeWidth,
+                    borderLeftColor: 'transparent',
+                    borderBottomColor: 'transparent',
+                    borderRightColor: color,
+                    borderTopColor: color,
+                    transform: [{ rotate: `${rightRotation - 135}deg` }],
+                }} />
             </View>
 
-            {/* Left slice (50–100%) */}
+            {/* Left half progress (50-100%) - clips to left side */}
             {clamp > 50 && (
                 <View style={{
-                    position: 'absolute', width: size, height: size,
-                    borderRadius: half, overflow: 'hidden',
+                    position: 'absolute',
+                    width: half,
+                    height: size,
+                    left: 0,
+                    overflow: 'hidden',
                 }}>
                     <View style={{
-                        position: 'absolute', left: 0, top: 0,
-                        width: half, height: size, overflow: 'hidden',
-                    }}>
-                        <View style={{
-                            position: 'absolute', left: 0, top: 0,
-                            width: size, height: size, borderRadius: half,
-                            borderWidth: strokeWidth, borderColor: color,
-                            transform: [{ rotate: `${leftDeg}deg` }],
-                        }} />
-                    </View>
+                        width: size,
+                        height: size,
+                        borderRadius: half,
+                        borderWidth: strokeWidth,
+                        borderRightColor: 'transparent',
+                        borderTopColor: 'transparent',
+                        borderLeftColor: color,
+                        borderBottomColor: color,
+                        transform: [{ rotate: `${leftRotation - 135}deg` }],
+                    }} />
                 </View>
             )}
 
@@ -631,9 +642,8 @@ const GroupDetailsScreen = () => {
             const token = await AsyncStorage.getItem('token');
             if (!token) { navigation.navigate('Signin'); return; }
 
-            await axios.post(
-                `${Constants.expoConfig?.extra?.apiUrl}/user/group/${group_id}/join`,
-                {},
+            await axios.get(
+                `${Constants.expoConfig?.extra?.apiUrl}/user/group/accept-invitation/${group_id}`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
