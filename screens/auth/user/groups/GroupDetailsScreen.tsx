@@ -13,7 +13,7 @@ import {
     Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRoute, RouteProp, useNavigation, NavigationProp } from '@react-navigation/native';
+import { useRoute, RouteProp, useNavigation, NavigationProp, useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -570,6 +570,10 @@ const detailStyles = StyleSheet.create({
     value: { fontSize: 15, fontWeight: '700', color: semanticColors.textPrimary },
 });
 
+// ─── Cache Config ─────────────────────────────────────────────────────────────
+
+const CACHE_DURATION = 20 * 1000; // 20 seconds
+
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 const GroupDetailsScreen = () => {
@@ -582,15 +586,59 @@ const GroupDetailsScreen = () => {
     const [is_active, setIsActive] = React.useState<boolean>(false);
     const [isInGroup, setIsInGroup] = React.useState<boolean>(false);
     const [joining, setJoining] = React.useState<boolean>(false);
+    const [loading, setLoading] = React.useState<boolean>(true);
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
+    const lastFetchRef = React.useRef<number>(0);
+    const isFetchingRef = React.useRef<boolean>(false);
 
+    // Load cached data immediately on mount
     React.useEffect(() => {
-        if (!group_id) { navigation.goBack(); return; }
-        loadGroup();
+        const loadCachedData = async () => {
+            try {
+                const cacheKey = `cache_group_${group_id}`;
+                const cachedData = await AsyncStorage.getItem(cacheKey);
+                if (cachedData) {
+                    const { group: cachedGroup, role: cachedRole, isActive: cachedIsActive, isInGroup: cachedIsInGroup } = JSON.parse(cachedData);
+                    setGroup(cachedGroup);
+                    setRole(cachedRole);
+                    setIsActive(cachedIsActive);
+                    setIsInGroup(cachedIsInGroup);
+                    setLoading(false);
+                    Animated.timing(fadeAnim, {
+                        toValue: 1, duration: 350, useNativeDriver: true,
+                    }).start();
+                }
+            } catch (error) {
+                console.error("Error loading cached group:", error);
+            }
+        };
+        if (group_id) loadCachedData();
     }, [group_id]);
 
-    const loadGroup = async () => {
+    // Refetch group data when screen comes into focus
+    useFocusEffect(
+        React.useCallback(() => {
+            if (!group_id) { navigation.goBack(); return; }
+            loadGroup();
+        }, [group_id])
+    );
+
+    const loadGroup = async (forceRefresh = false) => {
+        // Prevent concurrent fetches
+        if (isFetchingRef.current) return;
+        
+        // Skip if data was fetched recently (unless forced)
+        const now = Date.now();
+        if (!forceRefresh && lastFetchRef.current > 0 && (now - lastFetchRef.current) < CACHE_DURATION) {
+            setLoading(false);
+            return;
+        }
+        
         try {
+            isFetchingRef.current = true;
+            // Only show loading if we have no data yet
+            if (!group) setLoading(true);
+            
             const token = await AsyncStorage.getItem('token');
             if (!token) { navigation.navigate('Signin'); return; }
 
@@ -614,25 +662,45 @@ const GroupDetailsScreen = () => {
             const me = JSON.parse(userStr);
             const pivot = g.users.find(u => u.email === me.email)?.pivot;
             
+            let newRole = '';
+            let newIsActive = false;
+            let newIsInGroup = false;
+            
             // If user is not in group yet, let them see the group and request to join
             if (pivot) {
-                setIsInGroup(true);
-                setRole(pivot.role);
-                setIsActive(pivot.is_active);
-            } else {
-                setIsInGroup(false);
-                setRole('');
-                setIsActive(false);
+                newIsInGroup = true;
+                newRole = pivot.role;
+                newIsActive = pivot.is_active;
             }
+            
+            setIsInGroup(newIsInGroup);
+            setRole(newRole);
+            setIsActive(newIsActive);
+            
+            // Update cache
+            lastFetchRef.current = Date.now();
+            const cacheKey = `cache_group_${group_id}`;
+            await AsyncStorage.setItem(cacheKey, JSON.stringify({
+                group: g,
+                role: newRole,
+                isActive: newIsActive,
+                isInGroup: newIsInGroup,
+            }));
 
             Animated.timing(fadeAnim, {
                 toValue: 1, duration: 350, useNativeDriver: true,
             }).start();
         } catch (err: any) {
             const message = err?.response?.data?.message ?? err?.message ?? 'Failed to load group details.';
-            Alert.alert('Error', message, [
-                { text: 'OK', onPress: () => navigation.goBack() },
-            ]);
+            // Only show error if we don't have cached data
+            if (!group) {
+                Alert.alert('Error', message, [
+                    { text: 'OK', onPress: () => navigation.goBack() },
+                ]);
+            }
+        } finally {
+            setLoading(false);
+            isFetchingRef.current = false;
         }
     };
 
@@ -673,8 +741,8 @@ const GroupDetailsScreen = () => {
         }
     };
 
-    // ── Loading state ──
-    if (!group) {
+    // ── Loading state (only show full loading screen if no cached data) ──
+    if (!group && loading) {
         return (
             <SafeAreaView style={styles.container}>
                 <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
@@ -692,6 +760,35 @@ const GroupDetailsScreen = () => {
                 <View style={styles.loadingCenter}>
                     <ActivityIndicator size="large" color={semanticColors.buttonPrimary} />
                     <Text style={styles.loadingText}>Loading group info…</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    // Edge case: loading finished but no group data (error occurred)
+    if (!group) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+                <LinearGradient
+                    colors={semanticColors.gradientHeader}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.gradientHeader}
+                >
+                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={20} color={semanticColors.textInverse} />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Group Details</Text>
+                </LinearGradient>
+                <View style={styles.loadingCenter}>
+                    <Text style={styles.loadingText}>Unable to load group</Text>
+                    <TouchableOpacity 
+                        style={{ marginTop: 16, padding: 12, backgroundColor: semanticColors.buttonPrimary, borderRadius: 8 }}
+                        onPress={() => loadGroup(true)}
+                    >
+                        <Text style={{ color: semanticColors.textInverse, fontWeight: '600' }}>Retry</Text>
+                    </TouchableOpacity>
                 </View>
             </SafeAreaView>
         );

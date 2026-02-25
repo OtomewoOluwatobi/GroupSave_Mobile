@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     View,
     Text,
@@ -8,9 +8,11 @@ import {
     StatusBar,
     Animated,
     Dimensions,
+    ActivityIndicator,
+    RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -54,9 +56,16 @@ interface ApiNotification {
         message?: string;
         group_id?: number;
         group_title?: string;
+        group_name?: string;
         user_id?: number;
         user_name?: string;
         amount?: string;
+        // Login notification specific fields
+        ip_address?: string;
+        user_agent?: string;
+        device?: string;
+        login_time?: string;
+        is_new_device?: boolean;
         [key: string]: any;
     };
     read_at: string | null;
@@ -104,6 +113,7 @@ const getAvatarColor = (id: number) => AVATAR_PALETTE[(id || 0) % AVATAR_PALETTE
 
 // ── Notification Type Config ──────────────────────────────────────────────────
 const NOTIF_TYPE_CONFIG: { [key: string]: { icon: string; color: string; colorSoft: string; cta: string } } = {
+    login: { icon: '🔐', color: D.accent, colorSoft: D.accentSoft, cta: 'View Details' },
     group_created: { icon: '🏦', color: D.accent, colorSoft: D.accentSoft, cta: 'View Group' },
     group_joined: { icon: '🏦', color: D.accent, colorSoft: D.accentSoft, cta: 'View Group' },
     group_join_request: { icon: '👋', color: D.warn, colorSoft: D.warnSoft, cta: 'Review' },
@@ -154,12 +164,22 @@ function mapApiNotification(apiNotif: ApiNotification): Notification {
         title = notifType.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
     }
     
+    // Build body message - for login notifications, include device info
+    let body = apiNotif.data?.message || '';
+    if (notifType === 'login' && apiNotif.data) {
+        const device = apiNotif.data.device || 'Unknown Device';
+        const ipAddress = apiNotif.data.ip_address || '';
+        if (ipAddress) {
+            body = `${body}\nDevice: ${device}\nIP: ${ipAddress}`;
+        }
+    }
+    
     return {
         id: apiNotif.id,
         type: notifType,
         groupId: apiNotif.data?.group_id || null,
         title,
-        body: apiNotif.data?.message || '',
+        body,
         icon: config.icon,
         color: config.color,
         colorSoft: config.colorSoft,
@@ -442,6 +462,12 @@ const statStyles = StyleSheet.create({
     },
 });
 
+// ── Cache Keys ────────────────────────────────────────────────────────────────
+const CACHE_KEYS = {
+    NOTIFICATIONS_DATA: "cache_notifications_data",
+};
+const CACHE_DURATION = 15 * 1000; // 15 seconds
+
 // ── Main Screen ───────────────────────────────────────────────────────────────
 const NotificationsScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<any>>();
@@ -452,58 +478,99 @@ const NotificationsScreen = () => {
     const toastAnim = useRef(new Animated.Value(0)).current;
     const tokenRef = useRef<string | null>(null);
     const apiUrlRef = useRef<string | null>(null);
+    const lastFetchRef = useRef<number>(0);
+    const isFetchingRef = useRef<boolean>(false);
 
-    // Fetch notifications from API
+    // Load cached data immediately on mount
     useEffect(() => {
-        const fetchNotifications = async () => {
+        const loadCachedData = async () => {
             try {
-                const userData = await AsyncStorage.getItem('user');
-                if (!userData) {
-                    navigation.navigate('Signin');
-                    return;
+                const cachedData = await AsyncStorage.getItem(CACHE_KEYS.NOTIFICATIONS_DATA);
+                if (cachedData) {
+                    const parsed = JSON.parse(cachedData);
+                    setAllNotifs(parsed);
+                    setLoading(false);
                 }
-
-                const token = await AsyncStorage.getItem('token');
-                const apiUrl = Constants.expoConfig?.extra?.apiUrl;
-                tokenRef.current = token;
-                apiUrlRef.current = apiUrl;
-
-                const response = await fetch(`${apiUrl}/user/notifications`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        Accept: 'application/json',
-                    },
-                });
-
-                if (response.status === 401) {
-                    await AsyncStorage.multiRemove(['token', 'user', 'tokenExpiresAt']);
-                    navigation.navigate('Signin');
-                    return;
-                }
-
-                const data = await response.json();
-                
-                // Handle paginated response: { notifications: { data: [...] }, unread_count }
-                let notificationsArray: ApiNotification[] = [];
-                if (data.notifications?.data && Array.isArray(data.notifications.data)) {
-                    notificationsArray = data.notifications.data;
-                } else if (data.data && Array.isArray(data.data)) {
-                    notificationsArray = data.data;
-                } else if (Array.isArray(data)) {
-                    notificationsArray = data;
-                }
-                
-                const notifs = notificationsArray.map((n: ApiNotification) => mapApiNotification(n));
-                setAllNotifs(notifs);
             } catch (error) {
-                console.error('Error fetching notifications:', error);
-            } finally {
-                setLoading(false);
+                console.error("Error loading cached notifications:", error);
             }
         };
-
-        fetchNotifications();
+        loadCachedData();
     }, []);
+
+    // Fetch notifications from API
+    const fetchNotifications = useCallback(async (forceRefresh = false) => {
+        // Prevent concurrent fetches
+        if (isFetchingRef.current) return;
+        
+        // Skip if data was fetched recently (unless forced)
+        const now = Date.now();
+        if (!forceRefresh && lastFetchRef.current > 0 && (now - lastFetchRef.current) < CACHE_DURATION) {
+            setLoading(false);
+            return;
+        }
+        
+        try {
+            isFetchingRef.current = true;
+            // Only show loading if we have no data yet
+            if (allNotifs.length === 0) setLoading(true);
+            
+            const userData = await AsyncStorage.getItem('user');
+            if (!userData) {
+                navigation.navigate('Signin');
+                return;
+            }
+
+            const token = await AsyncStorage.getItem('token');
+            const apiUrl = Constants.expoConfig?.extra?.apiUrl;
+            tokenRef.current = token;
+            apiUrlRef.current = apiUrl;
+
+            const response = await fetch(`${apiUrl}/user/notifications`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: 'application/json',
+                },
+            });
+
+            if (response.status === 401) {
+                await AsyncStorage.multiRemove(['token', 'user', 'tokenExpiresAt']);
+                navigation.navigate('Signin');
+                return;
+            }
+
+            const data = await response.json();
+            
+            // Handle paginated response: { notifications: { data: [...] }, unread_count }
+            let notificationsArray: ApiNotification[] = [];
+            if (data.notifications?.data && Array.isArray(data.notifications.data)) {
+                notificationsArray = data.notifications.data;
+            } else if (data.data && Array.isArray(data.data)) {
+                notificationsArray = data.data;
+            } else if (Array.isArray(data)) {
+                notificationsArray = data;
+            }
+            
+            const notifs = notificationsArray.map((n: ApiNotification) => mapApiNotification(n));
+            setAllNotifs(notifs);
+            
+            // Update last fetch timestamp and cache
+            lastFetchRef.current = Date.now();
+            await AsyncStorage.setItem(CACHE_KEYS.NOTIFICATIONS_DATA, JSON.stringify(notifs));
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+        } finally {
+            setLoading(false);
+            isFetchingRef.current = false;
+        }
+    }, [navigation, allNotifs.length]);
+
+    // Refetch notifications when screen comes into focus
+    useFocusEffect(
+        useCallback(() => {
+            fetchNotifications();
+        }, [fetchNotifications])
+    );
 
     // Toast animation
     useEffect(() => {
@@ -545,15 +612,21 @@ const NotificationsScreen = () => {
         
         // Call API to mark all as read
         try {
-            await fetch(`${apiUrlRef.current}/user/notifications/read-all`, {
-                method: 'POST',
+            await fetch(`${apiUrlRef.current}/user/notifications/mark-all-read`, {
+                method: 'PUT',
                 headers: {
                     Authorization: `Bearer ${tokenRef.current}`,
                     Accept: 'application/json',
                 },
             });
+            // Refresh notifications from server to ensure sync
+            lastFetchRef.current = 0; // Reset cache timer to force refresh
+            await fetchNotifications(true);
         } catch (error) {
             console.error('Error marking all notifications as read:', error);
+            // Refresh to revert optimistic update on error
+            lastFetchRef.current = 0;
+            await fetchNotifications(true);
         }
     };
 
@@ -572,6 +645,11 @@ const NotificationsScreen = () => {
             : allNotifs.filter(n => n.type === filter);
 
     const unreadCount = allNotifs.filter(n => !n.read).length;
+
+    // Pull to refresh handler
+    const onRefresh = useCallback(async () => {
+        await fetchNotifications(true);
+    }, [fetchNotifications]);
 
     // Group by date label
     const grouped = filtered.reduce((acc: { [key: string]: Notification[] }, n) => {
@@ -623,7 +701,18 @@ const NotificationsScreen = () => {
                 </View>
             </LinearGradient>
 
-            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+            <ScrollView 
+                style={styles.scrollView} 
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={loading}
+                        onRefresh={onRefresh}
+                        tintColor={D.accent}
+                        colors={[D.accent]}
+                    />
+                }
+            >
                 {/* Stats Bar */}
                 <View style={styles.section}>
                     <StatBar notifs={allNotifs} />
@@ -680,7 +769,12 @@ const NotificationsScreen = () => {
 
                 {/* Notification List */}
                 <View style={styles.listContainer}>
-                    {Object.keys(grouped).length === 0 ? (
+                    {loading && allNotifs.length === 0 ? (
+                        <View style={styles.loadingState}>
+                            <ActivityIndicator size="large" color={D.accent} />
+                            <Text style={styles.loadingText}>Loading notifications...</Text>
+                        </View>
+                    ) : Object.keys(grouped).length === 0 ? (
                         <View style={styles.emptyState}>
                             <Text style={styles.emptyIcon}>🔕</Text>
                             <Text style={styles.emptyTitle}>Nothing here</Text>
@@ -883,6 +977,16 @@ const styles = StyleSheet.create({
     emptySubtitle: {
         fontSize: 13,
         color: D.textMuted,
+    },
+    loadingState: {
+        alignItems: 'center',
+        paddingVertical: 60,
+        paddingHorizontal: 20,
+    },
+    loadingText: {
+        fontSize: 14,
+        color: D.textSub,
+        marginTop: 12,
     },
     toast: {
         position: 'absolute',

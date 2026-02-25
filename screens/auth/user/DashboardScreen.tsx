@@ -21,7 +21,7 @@ import { LinearGradient as LG } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ActionSheetRef } from "react-native-actions-sheet";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import axios from "axios";
 import Constants from "expo-constants";
@@ -452,6 +452,15 @@ const TransactionsList: React.FC = () => {
     );
 };
 
+// ─── Cache Keys ───────────────────────────────────────────────────────────────
+
+const CACHE_KEYS = {
+    DASHBOARD_DATA: "cache_dashboard_data",
+    DASHBOARD_TIMESTAMP: "cache_dashboard_timestamp",
+};
+
+const CACHE_DURATION = 30 * 1000; // 30 seconds - won't refetch if data is newer than this
+
 // ─── Custom Hooks ─────────────────────────────────────────────────────────────
 
 const useDashboardData = (
@@ -463,15 +472,51 @@ const useDashboardData = (
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const lastFetchRef = useRef<number>(0);
+    const isFetchingRef = useRef<boolean>(false);
+
+    // Load cached data immediately on mount
+    useEffect(() => {
+        const loadCachedData = async () => {
+            try {
+                const [cachedData, userData] = await Promise.all([
+                    AsyncStorage.getItem(CACHE_KEYS.DASHBOARD_DATA),
+                    AsyncStorage.getItem("user"),
+                ]);
+                
+                if (userData) setUser(JSON.parse(userData));
+                
+                if (cachedData) {
+                    const { topGroups: cached_topGroups, myGroups: cached_myGroups, stats: cached_stats } = JSON.parse(cachedData);
+                    setTopGroups(cached_topGroups || []);
+                    setMyGroups(cached_myGroups || []);
+                    setStats(cached_stats || null);
+                    setLoading(false); // Hide loading immediately if we have cache
+                }
+            } catch (error) {
+                console.error("Error loading cached data:", error);
+            }
+        };
+        loadCachedData();
+    }, []);
 
     const fetchData = useCallback(
-        async (isRefresh = false) => {
-            try {
-                if (isRefresh) setRefreshing(true);
-                else setLoading(true);
+        async (isRefresh = false, forceRefresh = false) => {
+            // Prevent concurrent fetches
+            if (isFetchingRef.current) return;
+            
+            // Skip if data was fetched recently (unless forced or manual refresh)
+            const now = Date.now();
+            if (!forceRefresh && !isRefresh && lastFetchRef.current > 0 && (now - lastFetchRef.current) < CACHE_DURATION) {
+                setLoading(false);
+                return;
+            }
 
-                const userData = await AsyncStorage.getItem("user");
-                if (userData) setUser(JSON.parse(userData));
+            try {
+                isFetchingRef.current = true;
+                if (isRefresh) setRefreshing(true);
+                // Only show loading if we have no data yet
+                else if (topGroups.length === 0 && myGroups.length === 0) setLoading(true);
 
                 const token = await AsyncStorage.getItem("token");
                 if (!token) {
@@ -507,6 +552,15 @@ const useDashboardData = (
                 setMyGroups(user_groups);
                 setStats(dashboardStats);
                 if (apiUser) setUser(apiUser);
+                
+                // Update last fetch timestamp
+                lastFetchRef.current = Date.now();
+                
+                // Cache the data for instant loading next time
+                await AsyncStorage.setItem(
+                    CACHE_KEYS.DASHBOARD_DATA,
+                    JSON.stringify({ topGroups: suggested_groups, myGroups: user_groups, stats: dashboardStats })
+                );
             } catch (error: any) {
                 console.error("❌ Error fetching dashboard data:", error.message);
 
@@ -517,23 +571,27 @@ const useDashboardData = (
             } finally {
                 setLoading(false);
                 setRefreshing(false);
+                isFetchingRef.current = false;
             }
         },
-        [navigation],
+        [navigation, topGroups.length, myGroups.length],
     );
 
     const signOut = useCallback(async () => {
         try {
-            await AsyncStorage.multiRemove(["token", "user", "tokenExpiresAt"]);
+            await AsyncStorage.multiRemove(["token", "user", "tokenExpiresAt", CACHE_KEYS.DASHBOARD_DATA, CACHE_KEYS.DASHBOARD_TIMESTAMP]);
             navigation.reset({ index: 0, routes: [{ name: "Signin" }] });
         } catch (error) {
             console.error("Error signing out:", error);
         }
     }, [navigation]);
 
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+    // Refetch data whenever the screen comes into focus (respects cache duration)
+    useFocusEffect(
+        useCallback(() => {
+            fetchData();
+        }, [fetchData])
+    );
 
     return {
         user,
@@ -542,7 +600,7 @@ const useDashboardData = (
         stats,
         loading,
         refreshing,
-        refetch: () => fetchData(true),
+        refetch: () => fetchData(true, true), // Force refresh on pull-to-refresh
         signOut,
     };
 };
