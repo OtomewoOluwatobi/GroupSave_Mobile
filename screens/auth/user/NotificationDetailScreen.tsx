@@ -342,7 +342,6 @@ const NotificationDetailScreen: React.FC = () => {
                 throw new Error('Invalid response');
             }
         } catch (err: any) {
-            console.error('Error fetching notification:', err);
             setError(err.message || 'Failed to load notification');
         } finally {
             setLoading(false);
@@ -360,7 +359,7 @@ const NotificationDetailScreen: React.FC = () => {
                 },
             });
         } catch (error) {
-            console.error('Error marking as read:', error);
+            // Silent fail for marking as read
         }
     };
 
@@ -487,7 +486,7 @@ const NotificationDetailScreen: React.FC = () => {
             }
             
         } catch (error) {
-            console.error('Action error:', error);
+            // Silent fail for action errors
         } finally {
             setTimeout(() => setActionLoading(null), 500);
         }

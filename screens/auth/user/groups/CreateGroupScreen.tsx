@@ -585,7 +585,7 @@ const CreateGroupScreen = () => {
                     setUserEmail(parsed.email);
                 }
             } catch (error) {
-                console.error('Error fetching user data:', error);
+                // Silent fail for user data fetch
             }
         };
         fetchUserData();
@@ -756,7 +756,6 @@ const CreateGroupScreen = () => {
 
             setIsSuccess(true);
         } catch (error) {
-            console.error('Error creating group:', error);
             Dialog.show({
                 type: ALERT_TYPE.DANGER,
                 title: 'Network Error',

@@ -834,7 +834,7 @@ const GroupDetailsScreen = () => {
                     }).start();
                 }
             } catch (error) {
-                console.error("Error loading cached group:", error);
+                // Silent fail for cache loading
             }
         };
         if (group_id) loadCachedData();
@@ -882,8 +882,6 @@ const GroupDetailsScreen = () => {
             const requests = res.data.data.join_requests || [];
             // Only show pending join requests
             const pendingRequests = requests.filter((r: JoinRequest) => r.status.toLowerCase() === 'pending');
-            console.log('Loaded group:', g);
-            console.log('Join requests:', pendingRequests);
             setGroup(g);
             setJoinRequests(pendingRequests);
 
@@ -965,8 +963,6 @@ const GroupDetailsScreen = () => {
             }
             loadGroup();
         } catch (err: any) {
-            console.error('Join error:', err.response ?? err);
-            
             const status = err?.response?.status;
             let errorMessage = 'Failed to join. Please try again.';
             

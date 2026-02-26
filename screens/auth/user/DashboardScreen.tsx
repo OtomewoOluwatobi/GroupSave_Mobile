@@ -494,7 +494,7 @@ const useDashboardData = (
                     setLoading(false); // Hide loading immediately if we have cache
                 }
             } catch (error) {
-                console.error("Error loading cached data:", error);
+                // Silent fail for cache loading
             }
         };
         loadCachedData();
@@ -520,14 +520,12 @@ const useDashboardData = (
 
                 const token = await AsyncStorage.getItem("token");
                 if (!token) {
-                    console.error("❌ No authentication token found.");
                     navigation.reset({ index: 0, routes: [{ name: "Signin" }] });
                     return;
                 }
 
                 const apiUrl = Constants.expoConfig?.extra?.apiUrl;
                 if (!apiUrl) {
-                    console.error("❌ API URL not configured in app.json");
                     return;
                 }
 
@@ -562,8 +560,6 @@ const useDashboardData = (
                     JSON.stringify({ topGroups: suggested_groups, myGroups: user_groups, stats: dashboardStats })
                 );
             } catch (error: any) {
-                console.error("❌ Error fetching dashboard data:", error.message);
-
                 if (error.response?.status === 401) {
                     await AsyncStorage.multiRemove(["token", "user"]);
                     navigation.reset({ index: 0, routes: [{ name: "Signin" }] });
@@ -582,7 +578,7 @@ const useDashboardData = (
             await AsyncStorage.multiRemove(["token", "user", "tokenExpiresAt", CACHE_KEYS.DASHBOARD_DATA, CACHE_KEYS.DASHBOARD_TIMESTAMP]);
             navigation.reset({ index: 0, routes: [{ name: "Signin" }] });
         } catch (error) {
-            console.error("Error signing out:", error);
+            // Silent fail for sign out
         }
     }, [navigation]);
 

@@ -98,7 +98,6 @@ export default function App() {
       
       return true;
     } catch (error) {
-      console.error('Error checking token expiration:', error);
       return false;
     }
   }, [handleLogout]);
@@ -175,7 +174,6 @@ export default function App() {
         // Setup expiration timer for valid token
         await setupExpirationTimer();
       } catch (error) {
-        console.error('Error checking auth status:', error);
         setIsAuthenticated(false);
       }
     };

@@ -85,7 +85,6 @@ const SigninScreen: React.FC = () => {
             }
         } catch (error: any) {
             // Handle different error scenarios
-            console.error('Login error:', error);
             if ((error as any).isAxiosError) {
                 const errorMessage = error.response?.data?.message
                     || error.response?.data?.error

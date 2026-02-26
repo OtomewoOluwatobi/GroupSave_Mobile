@@ -79,7 +79,6 @@ function SignupScreen() {
                 setSubmitting(false);
             })
             .catch(error => {
-                console.error('Registration error:', error.response?.data);
                 if (error.response && error.response.data && error.response.data.error) {
                     Dialog.show({
                         type: ALERT_TYPE.DANGER,

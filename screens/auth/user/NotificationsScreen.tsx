@@ -492,7 +492,7 @@ const NotificationsScreen = () => {
                     setLoading(false);
                 }
             } catch (error) {
-                console.error("Error loading cached notifications:", error);
+                // Silent fail for cache loading
             }
         };
         loadCachedData();
@@ -558,7 +558,7 @@ const NotificationsScreen = () => {
             lastFetchRef.current = Date.now();
             await AsyncStorage.setItem(CACHE_KEYS.NOTIFICATIONS_DATA, JSON.stringify(notifs));
         } catch (error) {
-            console.error('Error fetching notifications:', error);
+            // Silent fail for fetch errors
         } finally {
             setLoading(false);
             isFetchingRef.current = false;
@@ -601,7 +601,7 @@ const NotificationsScreen = () => {
                 },
             });
         } catch (error) {
-            console.error('Error marking notification as read:', error);
+            // Silent fail for marking as read
         }
     };
 
@@ -630,7 +630,6 @@ const NotificationsScreen = () => {
             lastFetchRef.current = 0; // Reset cache timer to force refresh
             await fetchNotifications(true);
         } catch (error) {
-            console.error('Error marking all notifications as read:', error);
             // Refresh to revert optimistic update on error
             lastFetchRef.current = 0;
             await fetchNotifications(true);
