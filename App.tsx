@@ -14,6 +14,7 @@ import DashboardScreen from './screens/auth/user/DashboardScreen';
 import CreateGroupScreen from './screens/auth/user/groups/CreateGroupScreen';
 import GroupDetailsScreen from './screens/auth/user/groups/GroupDetailsScreen';
 import NotificationsScreen from './screens/auth/user/NotificationsScreen';
+import NotificationDetailScreen from './screens/auth/user/NotificationDetailScreen';
 
 type RootStackParamList = {
   Home: undefined;
@@ -23,6 +24,7 @@ type RootStackParamList = {
   CreateGroup: undefined;
   GroupDetails: undefined;
   Notifications: undefined;
+  NotificationDetail: { notification_id: string };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -237,6 +239,13 @@ export default function App() {
               <Stack.Screen
                 name="Notifications"
                 component={NotificationsScreen}
+                options={{
+                  headerShown: false
+                }}
+              />
+              <Stack.Screen
+                name="NotificationDetail"
+                component={NotificationDetailScreen}
                 options={{
                   headerShown: false
                 }}

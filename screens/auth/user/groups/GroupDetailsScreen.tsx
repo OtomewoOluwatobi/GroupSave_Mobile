@@ -38,6 +38,7 @@ interface GroupUser {
 
 interface Group {
     id: number;
+    owner_id: number;
     title: string;
     target_amount: number;
     payable_amount?: number;
@@ -45,8 +46,28 @@ interface Group {
     active_users_count: number;
     current_month?: number;
     expected_start_date?: string;
+    expected_end_date?: string;
     payment_out_day?: number;
+    status?: string;
     users: Array<GroupUser>;
+}
+
+interface JoinRequest {
+    id: number;
+    status: string;
+    created_at: string;
+    updated_at: string;
+    user_id: number;
+    user_name: string;
+    user_email: string;
+}
+
+interface GroupApiResponse {
+    message: string;
+    data: {
+        group: Group;
+        join_requests: JoinRequest[];
+    };
 }
 
 type RootStackParamList = {
@@ -519,6 +540,207 @@ const memberStyles = StyleSheet.create({
     },
 });
 
+// ─── Join Request Card ────────────────────────────────────────────────────────
+
+const JoinRequestCard = ({ 
+    request, 
+    onAccept, 
+    onDecline,
+    processingAction,
+}: { 
+    request: JoinRequest; 
+    onAccept: (requestId: number) => void;
+    onDecline: (requestId: number) => void;
+    processingAction: 'accept' | 'decline' | null;
+}) => {
+    const requestDate = new Date(request.created_at);
+    const formattedDate = requestDate.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+    });
+
+    const isProcessing = processingAction !== null;
+    const isAccepting = processingAction === 'accept';
+    const isDeclining = processingAction === 'decline';
+
+    return (
+        <View style={[joinRequestStyles.card, shadowStyles]}>
+            <View style={joinRequestStyles.header}>
+                <View style={joinRequestStyles.avatar}>
+                    <Text style={joinRequestStyles.avatarTxt}>
+                        {getInitials(request.user_name)}
+                    </Text>
+                </View>
+                <View style={joinRequestStyles.userInfo}>
+                    <Text style={joinRequestStyles.userName} numberOfLines={1}>
+                        {request.user_name}
+                    </Text>
+                    <Text style={joinRequestStyles.userEmail} numberOfLines={1}>
+                        {request.user_email}
+                    </Text>
+                </View>
+            </View>
+            
+            <View style={joinRequestStyles.meta}>
+                <View style={joinRequestStyles.statusBadge}>
+                    <View style={joinRequestStyles.statusDot} />
+                    <Text style={joinRequestStyles.statusText}>
+                        {capitalize(request.status)}
+                    </Text>
+                </View>
+                <Text style={joinRequestStyles.dateText}>{formattedDate}</Text>
+            </View>
+            
+            <View style={joinRequestStyles.actions}>
+                <TouchableOpacity 
+                    style={[joinRequestStyles.declineBtn, isProcessing && joinRequestStyles.btnDisabled]}
+                    onPress={() => onDecline(request.id)}
+                    disabled={isProcessing}
+                >
+                    {isDeclining ? (
+                        <ActivityIndicator size="small" color={semanticColors.danger} />
+                    ) : (
+                        <>
+                            <Ionicons name="close" size={16} color={semanticColors.danger} />
+                            <Text style={joinRequestStyles.declineBtnTxt}>Decline</Text>
+                        </>
+                    )}
+                </TouchableOpacity>
+                <TouchableOpacity 
+                    style={[joinRequestStyles.acceptBtn, isProcessing && joinRequestStyles.btnDisabled]}
+                    onPress={() => onAccept(request.id)}
+                    disabled={isProcessing}
+                >
+                    {isAccepting ? (
+                        <ActivityIndicator size="small" color={semanticColors.textInverse} />
+                    ) : (
+                        <>
+                            <Ionicons name="checkmark" size={16} color={semanticColors.textInverse} />
+                            <Text style={joinRequestStyles.acceptBtnTxt}>Accept</Text>
+                        </>
+                    )}
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
+};
+
+const joinRequestStyles = StyleSheet.create({
+    card: {
+        backgroundColor: semanticColors.cardBackground,
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: semanticColors.border,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    avatar: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: semanticColors.warningLight,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    avatarTxt: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: semanticColors.warning,
+    },
+    userInfo: {
+        flex: 1,
+    },
+    userName: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: semanticColors.textPrimary,
+        marginBottom: 2,
+    },
+    userEmail: {
+        fontSize: 12,
+        color: semanticColors.textSecondary,
+    },
+    meta: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 14,
+        paddingBottom: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: semanticColors.divider,
+    },
+    statusBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: semanticColors.warningLight,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 20,
+    },
+    statusDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: semanticColors.warning,
+    },
+    statusText: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: semanticColors.warning,
+    },
+    dateText: {
+        fontSize: 11,
+        color: semanticColors.textSecondary,
+    },
+    actions: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    declineBtn: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        backgroundColor: semanticColors.dangerLight,
+        paddingVertical: 11,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: semanticColors.danger + '30',
+    },
+    declineBtnTxt: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: semanticColors.danger,
+    },
+    acceptBtn: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        backgroundColor: semanticColors.success,
+        paddingVertical: 11,
+        borderRadius: 10,
+    },
+    acceptBtnTxt: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: semanticColors.textInverse,
+    },
+    btnDisabled: {
+        opacity: 0.6,
+    },
+});
+
 // ─── Detail Row ───────────────────────────────────────────────────────────────
 
 const DetailRow = ({
@@ -582,10 +804,12 @@ const GroupDetailsScreen = () => {
     const { group_id } = route.params ?? { group_id: 0 };
 
     const [group, setGroup] = React.useState<Group | null>(null);
+    const [joinRequests, setJoinRequests] = React.useState<JoinRequest[]>([]);
     const [role, setRole] = React.useState<string>('');
     const [is_active, setIsActive] = React.useState<boolean>(false);
     const [isInGroup, setIsInGroup] = React.useState<boolean>(false);
     const [joining, setJoining] = React.useState<boolean>(false);
+    const [processingRequest, setProcessingRequest] = React.useState<{ id: number; action: 'accept' | 'decline' } | null>(null);
     const [loading, setLoading] = React.useState<boolean>(true);
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
     const lastFetchRef = React.useRef<number>(0);
@@ -598,8 +822,9 @@ const GroupDetailsScreen = () => {
                 const cacheKey = `cache_group_${group_id}`;
                 const cachedData = await AsyncStorage.getItem(cacheKey);
                 if (cachedData) {
-                    const { group: cachedGroup, role: cachedRole, isActive: cachedIsActive, isInGroup: cachedIsInGroup } = JSON.parse(cachedData);
+                    const { group: cachedGroup, joinRequests: cachedJoinRequests, role: cachedRole, isActive: cachedIsActive, isInGroup: cachedIsInGroup } = JSON.parse(cachedData);
                     setGroup(cachedGroup);
+                    setJoinRequests(cachedJoinRequests || []);
                     setRole(cachedRole);
                     setIsActive(cachedIsActive);
                     setIsInGroup(cachedIsInGroup);
@@ -642,7 +867,7 @@ const GroupDetailsScreen = () => {
             const token = await AsyncStorage.getItem('token');
             if (!token) { navigation.navigate('Signin'); return; }
 
-            const res = await axios.get<{ data: Group }>(
+            const res = await axios.get<GroupApiResponse>(
                 `${Constants.expoConfig?.extra?.apiUrl}/user/group/${group_id}`,
                 {
                     headers: {
@@ -653,9 +878,14 @@ const GroupDetailsScreen = () => {
                 }
             );
 
-            const g = res.data.data;
+            const g = res.data.data.group;
+            const requests = res.data.data.join_requests || [];
+            // Only show pending join requests
+            const pendingRequests = requests.filter((r: JoinRequest) => r.status.toLowerCase() === 'pending');
             console.log('Loaded group:', g);
+            console.log('Join requests:', pendingRequests);
             setGroup(g);
+            setJoinRequests(pendingRequests);
 
             const userStr = await AsyncStorage.getItem('user');
             if (!userStr) throw new Error('User not found.');
@@ -682,6 +912,7 @@ const GroupDetailsScreen = () => {
             const cacheKey = `cache_group_${group_id}`;
             await AsyncStorage.setItem(cacheKey, JSON.stringify({
                 group: g,
+                joinRequests: pendingRequests,
                 role: newRole,
                 isActive: newIsActive,
                 isInGroup: newIsInGroup,
@@ -710,16 +941,18 @@ const GroupDetailsScreen = () => {
             const token = await AsyncStorage.getItem('token');
             if (!token) { navigation.navigate('Signin'); return; }
 
-            await axios.get(
-                `${Constants.expoConfig?.extra?.apiUrl}/user/group/accept-invitation/${group_id}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        Accept: 'application/json',
-                        'Content-Type': 'application/json',
-                    },
-                }
-            );
+            // Use different endpoint based on whether user is already in group (accepting invitation) or not (requesting to join)
+            const endpoint = isInGroup 
+                ? `${Constants.expoConfig?.extra?.apiUrl}/user/group/${group_id}/accept-invitation/`
+                : `${Constants.expoConfig?.extra?.apiUrl}/user/group/${group_id}/send-join-request/`;
+
+            await axios.get(endpoint, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                },
+            });
 
             Alert.alert(
                 isInGroup ? '🎉 Joined!' : '📨 Request Sent!',
@@ -732,13 +965,120 @@ const GroupDetailsScreen = () => {
             }
             loadGroup();
         } catch (err: any) {
-            Alert.alert(
-                'Error',
-                err?.response?.data?.message ?? 'Failed to join. Please try again.'
-            );
+            console.error('Join error:', err.response ?? err);
+            
+            const status = err?.response?.status;
+            let errorMessage = 'Failed to join. Please try again.';
+            
+            // Handle different error types
+            if (status >= 500) {
+                errorMessage = 'Server is temporarily unavailable. Please try again later.';
+            } else if (status === 404) {
+                errorMessage = 'This group is no longer available.';
+            } else if (status === 401) {
+                navigation.navigate('Signin');
+                return;
+            } else if (err?.response?.data?.message) {
+                errorMessage = err.response.data.message;
+            } else if (!err?.response) {
+                errorMessage = 'Network error. Please check your connection.';
+            }
+            
+            Alert.alert('Error', errorMessage);
         } finally {
             setJoining(false);
         }
+    };
+
+    // Handle accept join request
+    const handleAcceptRequest = async (requestId: number) => {
+        setProcessingRequest({ id: requestId, action: 'accept' });
+        try {
+            const token = await AsyncStorage.getItem('token');
+            if (!token) { navigation.navigate('Signin'); return; }
+
+            await axios.put(
+                `${Constants.expoConfig?.extra?.apiUrl}/user/group/${group_id}/join-requests/${requestId}/approve`,
+                {},
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+
+            // Remove from list immediately
+            setJoinRequests(prev => prev.filter(r => r.id !== requestId));
+            Alert.alert('Success', 'Join request accepted successfully!');
+            // Refresh data in background to update members list
+            loadGroup(true);
+        } catch (err: any) {
+            const errorMessage = err?.response?.data?.message ?? '';
+            // If the request is no longer pending, remove it from the UI anyway
+            if (errorMessage.toLowerCase().includes('no longer pending') || 
+                errorMessage.toLowerCase().includes('already') ||
+                errorMessage.toLowerCase().includes('not found')) {
+                setJoinRequests(prev => prev.filter(r => r.id !== requestId));
+                loadGroup(true); // Refresh to get latest state
+            }
+            Alert.alert('Notice', errorMessage || 'Failed to accept request. Please try again.');
+        } finally {
+            setProcessingRequest(null);
+        }
+    };
+
+    // Handle decline join request
+    const handleDeclineRequest = async (requestId: number) => {
+        Alert.alert(
+            'Decline Request',
+            'Are you sure you want to decline this join request?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Decline',
+                    style: 'destructive',
+                    onPress: async () => {
+                        setProcessingRequest({ id: requestId, action: 'decline' });
+                        try {
+                            const token = await AsyncStorage.getItem('token');
+                            if (!token) { navigation.navigate('Signin'); return; }
+
+                            await axios.put(
+                                `${Constants.expoConfig?.extra?.apiUrl}/user/group/${group_id}/join-requests/${requestId}/reject`,
+                                {},
+                                {
+                                    headers: {
+                                        Authorization: `Bearer ${token}`,
+                                        Accept: 'application/json',
+                                        'Content-Type': 'application/json',
+                                    },
+                                }
+                            );
+
+                            // Remove from list immediately
+                            setJoinRequests(prev => prev.filter(r => r.id !== requestId));
+                            Alert.alert('Declined', 'Join request has been declined.');
+                            // Refresh data in background
+                            loadGroup(true);
+                        } catch (err: any) {
+                            const errorMessage = err?.response?.data?.message ?? '';
+                            // If the request is no longer pending, remove it from the UI anyway
+                            if (errorMessage.toLowerCase().includes('no longer pending') || 
+                                errorMessage.toLowerCase().includes('already') ||
+                                errorMessage.toLowerCase().includes('not found')) {
+                                setJoinRequests(prev => prev.filter(r => r.id !== requestId));
+                                loadGroup(true); // Refresh to get latest state
+                            }
+                            Alert.alert('Notice', errorMessage || 'Failed to decline request. Please try again.');
+                        } finally {
+                            setProcessingRequest(null);
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     // ── Loading state (only show full loading screen if no cached data) ──
@@ -957,6 +1297,27 @@ const GroupDetailsScreen = () => {
                             </ScrollView>
                         )}
                     </View>
+
+                    {/* ── Pending Join Requests (Admin Only) ── */}
+                    {role.toLowerCase() === 'admin' && joinRequests.length > 0 && (
+                        <View style={[styles.card, shadowStyles]}>
+                            <View style={styles.memberHeader}>
+                                <Text style={styles.sectionTitle}>Join Requests</Text>
+                                <View style={[styles.countBadge, { backgroundColor: semanticColors.warning }]}>
+                                    <Text style={styles.countTxt}>{joinRequests.length}</Text>
+                                </View>
+                            </View>
+                            {joinRequests.map((request) => (
+                                <JoinRequestCard
+                                    key={request.id}
+                                    request={request}
+                                    onAccept={handleAcceptRequest}
+                                    onDecline={handleDeclineRequest}
+                                    processingAction={processingRequest?.id === request.id ? processingRequest.action : null}
+                                />
+                            ))}
+                        </View>
+                    )}
 
                     <View style={{ height: 32 }} />
                 </Animated.View>

@@ -605,6 +605,13 @@ const NotificationsScreen = () => {
         }
     };
 
+    const openNotificationDetail = (id: string) => {
+        // Mark as read optimistically
+        setAllNotifs(prev => prev.map(n => (n.id === id ? { ...n, read: true } : n)));
+        // Navigate to detail screen
+        navigation.navigate('NotificationDetail', { notification_id: id });
+    };
+
     const markAllRead = async () => {
         // Optimistically update UI
         setAllNotifs(prev => prev.map(n => ({ ...n, read: true })));
@@ -790,7 +797,7 @@ const NotificationsScreen = () => {
                                 </View>
 
                                 {notifs.map(n => (
-                                    <NotifCard key={n.id} notif={n} onRead={markRead} onAction={handleAction} />
+                                    <NotifCard key={n.id} notif={n} onRead={openNotificationDetail} onAction={handleAction} />
                                 ))}
                             </View>
                         ))
