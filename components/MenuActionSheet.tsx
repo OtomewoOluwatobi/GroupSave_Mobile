@@ -83,6 +83,21 @@ const MenuActionSheet: React.FC<MenuActionSheetProps> = ({
     navigation.navigate('Notifications');
   };
 
+  const handleProfile = () => {
+    actionSheetRef.current?.hide();
+    navigation.navigate('Profile');
+  };
+
+  const handleReferral = () => {
+    actionSheetRef.current?.hide();
+    navigation.navigate('Referral');
+  };
+
+  const handleSettings = () => {
+    actionSheetRef.current?.hide();
+    navigation.navigate('Settings');
+  };
+
   const sections: MenuSection[] = [
     {
       title: 'Finance',
@@ -112,6 +127,7 @@ const MenuActionSheet: React.FC<MenuActionSheetProps> = ({
           label: 'Profile',
           iconBg: 'rgba(99,102,241,0.12)',
           iconColor: semanticColors.buttonSecondary,
+          onPress: handleProfile,
         },
       ],
     },
@@ -123,6 +139,7 @@ const MenuActionSheet: React.FC<MenuActionSheetProps> = ({
           label: 'Settings',
           iconBg: 'rgba(107,114,128,0.12)',
           iconColor: semanticColors.badgeNeutral,
+          onPress: handleSettings,
         },
         {
           icon: 'help-circle-outline',
@@ -135,6 +152,7 @@ const MenuActionSheet: React.FC<MenuActionSheetProps> = ({
           label: 'Referral',
           iconBg: 'rgba(236,72,153,0.12)',
           iconColor: semanticColors.badgePink,
+          onPress: handleReferral,
         },
         {
           icon: 'document-text-outline',

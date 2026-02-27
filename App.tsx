@@ -15,6 +15,9 @@ import CreateGroupScreen from './screens/auth/user/groups/CreateGroupScreen';
 import GroupDetailsScreen from './screens/auth/user/groups/GroupDetailsScreen';
 import NotificationsScreen from './screens/auth/user/NotificationsScreen';
 import NotificationDetailScreen from './screens/auth/user/NotificationDetailScreen';
+import ProfileScreen from './screens/auth/user/ProfileScreen';
+import ReferralScreen from './screens/auth/user/ReferralScreen';
+import SettingsScreen from './screens/auth/user/SettingsScreen';
 
 type RootStackParamList = {
   Home: undefined;
@@ -25,6 +28,9 @@ type RootStackParamList = {
   GroupDetails: undefined;
   Notifications: undefined;
   NotificationDetail: { notification_id: string };
+  Profile: undefined;
+  Referral: undefined;
+  Settings: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -244,9 +250,22 @@ export default function App() {
               <Stack.Screen
                 name="NotificationDetail"
                 component={NotificationDetailScreen}
-                options={{
-                  headerShown: false
-                }}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="Profile"
+                component={ProfileScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="Referral"
+                component={ReferralScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="Settings"
+                component={SettingsScreen}
+                options={{ headerShown: false }}
               />
             </Stack.Navigator>
           </NavigationContainer>
