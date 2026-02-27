@@ -44,11 +44,8 @@ type RootStackParamList = { Dashboard: undefined };
 interface ToggleState {
     push:    boolean;
     email:   boolean;
-    sms:     boolean;
     payment: boolean;
-    invite:  boolean;
     bio:     boolean;
-    auto:    boolean;
     dark:    boolean;
 }
 
@@ -153,8 +150,8 @@ const SettingsScreen: React.FC = () => {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
     const [s, setS] = useState<ToggleState>({
-        push: true, email: true, sms: false,
-        payment: true, invite: true, bio: false, auto: false, dark: true,
+        push: true, email: true,
+        payment: true, bio: false, dark: true,
     });
 
     const tog = (key: keyof ToggleState, label: string) => {
@@ -209,16 +206,13 @@ const SettingsScreen: React.FC = () => {
                     <View style={styles.card}>
                         <SettingsRow icon="notifications-outline" iconBg={D.accentSoft}  iconColor={D.accent}  label="Push Notifications" toggle toggleValue={s.push}    onToggle={() => tog('push',   'Push notifications')} />
                         <SettingsRow icon="mail-outline"           iconBg={D.accent2Soft} iconColor={D.accent2} label="Email Alerts"       toggle toggleValue={s.email}   onToggle={() => tog('email',  'Email alerts')} />
-                        <SettingsRow icon="phone-portrait-outline" iconBg={D.warnSoft}    iconColor={D.warn}    label="SMS Notifications"  toggle toggleValue={s.sms}     onToggle={() => tog('sms',    'SMS notifications')} />
-                        <SettingsRow icon="card-outline"           iconBg={D.accentSoft}  iconColor={D.accent}  label="Payment Reminders"  toggle toggleValue={s.payment} onToggle={() => tog('payment','Payment reminders')} />
-                        <SettingsRow icon="people-outline"         iconBg={D.purpleSoft}  iconColor={D.purple}  label="Group Invitations"  toggle toggleValue={s.invite}  onToggle={() => tog('invite', 'Invitation alerts')} last />
+                        <SettingsRow icon="card-outline"           iconBg={D.accentSoft}  iconColor={D.accent}  label="Payment Reminders"  toggle toggleValue={s.payment} onToggle={() => tog('payment','Payment reminders')} last />
                     </View>
 
                     {/* ── Security & Privacy ── */}
                     <SecLabel text="Security & Privacy" />
                     <View style={styles.card}>
                         <SettingsRow icon="finger-print-outline"  iconBg={D.accent2Soft} iconColor={D.accent2} label="Biometric Login"   toggle toggleValue={s.bio} onToggle={() => tog('bio', 'Biometric login')} />
-                        <SettingsRow icon="key-outline"            iconBg={D.accentSoft}  iconColor={D.accent}  label="Change Password"   onPress={() => info('Password reset email sent')} />
                         <SettingsRow icon="document-text-outline"  iconBg={D.warnSoft}    iconColor={D.warn}    label="Privacy Policy"    onPress={() => info('Opening privacy policy…')} />
                         <SettingsRow icon="newspaper-outline"      iconBg="rgba(59,130,246,0.12)" iconColor="#3b82f6" label="Terms of Service" onPress={() => info('Opening terms of service…')} last />
                     </View>
@@ -234,17 +228,8 @@ const SettingsScreen: React.FC = () => {
                             toggleValue={s.dark}
                             onToggle={() => tog('dark', 'Dark mode')}
                         />
-                        <SettingsRow icon="flash-outline"  iconBg={D.warnSoft}    iconColor={D.warn}    label="Auto Payment" toggle toggleValue={s.auto} onToggle={() => tog('auto', 'Auto payment')} />
-                        <SettingsRow icon="cash-outline"   iconBg={D.accent2Soft} iconColor={D.accent2} label="Currency"     value="GBP £"    onPress={() => info('Currency settings coming soon')} />
+                        <SettingsRow icon="cash-outline"   iconBg={D.accent2Soft} iconColor={D.accent2} label="Currency" value="GBP £"    onPress={() => info('Currency settings coming soon')} />
                         <SettingsRow icon="globe-outline"  iconBg="rgba(59,130,246,0.12)" iconColor="#3b82f6" label="Language" value="English" onPress={() => info('Language settings coming soon')} last />
-                    </View>
-
-                    {/* ── Payment & Banking ── */}
-                    <SecLabel text="Payment & Banking" />
-                    <View style={styles.card}>
-                        <SettingsRow icon="business-outline"    iconBg={D.accent2Soft} iconColor={D.accent2} label="Bank Accounts"       onPress={() => info('Opening bank accounts…')} />
-                        <SettingsRow icon="card-outline"        iconBg={D.accentSoft}  iconColor={D.accent}  label="Payment Methods"     onPress={() => info('Opening payment methods…')} />
-                        <SettingsRow icon="stats-chart-outline" iconBg={D.purpleSoft}  iconColor={D.purple}  label="Transaction History" onPress={() => info('Opening history…')} last />
                     </View>
 
                     {/* ── Help & Support ── */}
@@ -259,8 +244,7 @@ const SettingsScreen: React.FC = () => {
                     <SecLabel text="Account" />
                     <View style={styles.card}>
                         <SettingsRow icon="log-out-outline" iconBg={D.dangerSoft} iconColor={D.danger} label="Sign Out"       valueColor={D.danger} onPress={() => info('Signing out…')} />
-                        <SettingsRow icon="warning-outline" iconBg={D.dangerSoft} iconColor={D.danger} label="Clear App Data"                       onPress={() => info('App data cleared')} />
-                        <SettingsRow icon="trash-outline"   iconBg={D.dangerSoft} iconColor={D.danger} label="Delete Account"                       onPress={() => info('Contact support to delete your account')} last />
+                        <SettingsRow icon="warning-outline" iconBg={D.dangerSoft} iconColor={D.danger} label="Clear App Data"                       onPress={() => info('App data cleared')} last />
                     </View>
                 </View>
             </ScrollView>

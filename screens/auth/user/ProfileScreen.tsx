@@ -317,12 +317,6 @@ const ProfileScreen: React.FC = () => {
                             label="Sign Out"
                             valueColor={D.danger}
                             onPress={() => Toast.show({ type: 'info', text1: 'Signed out' })}
-                        />
-                        <InfoRow
-                            icon="trash-outline"
-                            label="Delete Account"
-                            valueColor={D.danger}
-                            onPress={() => Toast.show({ type: 'info', text1: 'Contact support to delete account' })}
                             last
                         />
                     </View>
