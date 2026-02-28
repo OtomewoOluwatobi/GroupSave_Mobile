@@ -8,8 +8,11 @@ import { AlertNotificationRoot, ALERT_TYPE, Dialog } from 'react-native-alert-no
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import HomeScreen from './screens/HomeScreen';
+import SplashScreen from './screens/SplashScreen';
+import OnboardingScreen from './screens/OnboardingScreen';
 import SigninScreen from './screens/SigninScreen';
 import SignupScreen from './screens/SignupScreen';
+import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import DashboardScreen from './screens/auth/user/DashboardScreen';
 import CreateGroupScreen from './screens/auth/user/groups/CreateGroupScreen';
 import GroupDetailsScreen from './screens/auth/user/groups/GroupDetailsScreen';
@@ -21,8 +24,11 @@ import SettingsScreen from './screens/auth/user/SettingsScreen';
 
 type RootStackParamList = {
   Home: undefined;
+  Splash: undefined;
+  Onboarding: undefined;
   Signin: undefined;
   Signup: undefined;
+  ForgotPassword: undefined;
   Dashboard: undefined;
   CreateGroup: undefined;
   GroupDetails: undefined;
@@ -218,9 +224,12 @@ export default function App() {
           <NavigationContainer ref={navigationRef} onStateChange={onNavigationStateChange}>
             <Stack.Navigator
               screenOptions={{ headerShown: false }}
-              initialRouteName={isAuthenticated ? "Dashboard" : "Signin"}
+              initialRouteName={isAuthenticated ? "Dashboard" : "Splash"}
             >
               <Stack.Screen name="Home" component={HomeScreen} />
+              <Stack.Screen name="Splash" component={SplashScreen} />
+              <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+              <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
               <Stack.Screen name="Signin" component={SigninScreen} />
               <Stack.Screen name="Signup" component={SignupScreen} />
               <Stack.Screen

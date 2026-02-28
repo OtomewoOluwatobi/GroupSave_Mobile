@@ -1,285 +1,280 @@
 import React from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    KeyboardAvoidingView,
-    Platform,
-    ImageBackground,
-    TouchableWithoutFeedback,
-    Keyboard,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StatusBar,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
-import Toast from 'react-native-toast-message';
 import { ALERT_TYPE, Dialog } from 'react-native-alert-notification';
 import Constants from 'expo-constants';
-
-import FormInput from '../components/FormInput';
-import { semanticColors } from '../theme/semanticColors';
+import { D } from '../theme/tokens';
+import PrimaryButton from '../components/PrimaryButton';
+import FloatingLabelInput from '../components/FloatingLabelInput';
 
 
 type RootStackParamList = {
-    Signin: undefined;
-    Signup: undefined;
-    Dashboard: undefined;
+  Signin: undefined;
+  Signup: undefined;
+  Dashboard: undefined;
+  ForgotPassword: undefined;
 };
 
 const validationSchema = Yup.object({
-    email: Yup.string().email('Invalid email').required('Email is required'),
-    password: Yup.string().min(6, 'Min 6 characters').required('Password is required'),
+  email: Yup.string().email('Invalid email').required('Email is required'),
+  password: Yup.string().min(6, 'Min 6 characters').required('Password is required'),
 });
 
 const SigninScreen: React.FC = () => {
-    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-    const initialValues = {
-        email: 'otomewooluwatobi@gmail.com',
-        password: 'password@123',
-    };
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const initialValues = {
+    email: '',
+    password: '',
+  };
 
-    const handleFormSubmit = async (values: typeof initialValues) => {
-        const userData = {
-            email: values.email,
-            password: values.password,
-        };
-        // Make API call to sign in
-        try {
-            const apiUrl =  Constants.expoConfig?.extra?.apiUrl;
-            interface SigninResponse {
-                token: string;
-                user: any;
-                expires_in: number;
-            }
-            if (!apiUrl) {
-                throw new Error('API URL not configured');
-            }
-            const response = await axios.post<SigninResponse>(`${apiUrl}/auth/login`, userData);
+  const handleFormSubmit = async (values: typeof initialValues) => {
+    const userData = { email: values.email, password: values.password };
+    try {
+      const apiUrl = Constants.expoConfig?.extra?.apiUrl;
+      interface SigninResponse {
+        token: string;
+        user: any;
+        expires_in: number;
+      }
+      if (!apiUrl) throw new Error('API URL not configured');
+      const response = await axios.post<SigninResponse>(`${apiUrl}/auth/login`, userData);
+      if (response.data?.token) {
+        await AsyncStorage.setItem('token', response.data.token);
+        await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
+        const expiresAt = Date.now() + response.data.expires_in * 1000;
+        await AsyncStorage.setItem('tokenExpiresAt', expiresAt.toString());
+        navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
+      } else {
+        Dialog.show({ type: ALERT_TYPE.DANGER, title: 'Sign In Error', textBody: 'Invalid response from server', button: 'Close' });
+      }
+    } catch (error: any) {
+      const errorMessage = error.isAxiosError
+        ? error.response?.data?.message || error.response?.data?.error || 'Invalid credentials'
+        : error.message || 'Network error. Please check your connection.';
+      Dialog.show({ type: ALERT_TYPE.DANGER, title: 'Sign In Error', textBody: errorMessage, button: 'Close' });
+    }
+  };
 
-            if (response.data && response.data.token) {
-                // Store the token and user data
-                await AsyncStorage.setItem('token', response.data.token);
-                await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
-                
-                // Store token expiration time (current time + expires_in seconds)
-                const expiresAt = Date.now() + (response.data.expires_in * 1000);
-                await AsyncStorage.setItem('tokenExpiresAt', expiresAt.toString());
+  return (
+    <View style={styles.root}>
+      <StatusBar barStyle="light-content" backgroundColor={D.bg} />
 
-                // Navigate to dashboard
-                navigation.reset({
-                    index: 0,
-                    routes: [{ name: 'Dashboard' }],
-                });
-            } else {
-                // Handle invalid response
-                Dialog.show({
-                    type: ALERT_TYPE.DANGER,
-                    title: 'Singin Error',
-                    textBody: 'Invalid response from server',
-                    button: 'Close',
-                });
-            }
-        } catch (error: any) {
-            // Handle different error scenarios
-            if ((error as any).isAxiosError) {
-                const errorMessage = error.response?.data?.message
-                    || error.response?.data?.error
-                    || 'Invalid credentials';
+      {/* Hero gradient banner */}
+      <LinearGradient colors={['#1a1f3e', D.bg]} style={styles.heroBanner}>
+        <View style={styles.circle1} />
+        <View style={styles.circle2} />
+        <Text style={styles.heroEmoji}>🔐</Text>
+        <Text style={styles.appName}>GroupSave</Text>
+        <Text style={styles.heroSubtitle}>Sign in to continue</Text>
+      </LinearGradient>
 
-                // Show error message using Toast or Alert
-                Dialog.show({
-                    type: ALERT_TYPE.DANGER,
-                    title: 'Sign In Error',
-                    textBody: errorMessage || 'An unknown error occurred.',
-                    button: 'Close',
-                });
-            } else {
-                // Handle network error or other unexpected errors
-                Dialog.show({
-                    type: ALERT_TYPE.DANGER,
-                    title: 'Sign In Error',
-                    textBody: error.message || 'Network error. Please check your connection.',
-                    button: 'Close',
-                });
-            }
-        }
-    };
-
-    return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.keyboardView}
+      {/* Form card */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.cardWrapper}
+      >
+        <ScrollView
+          contentContainerStyle={styles.card}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                <ImageBackground source={require('../assets/bg_img.jpg')} style={styles.mainContainer}>
-                    <View style={styles.container1}>
-                        <Text style={styles.logo}>Group Save</Text>
-                    </View>
-                    <View style={styles.container2}>
-                        <Text style={[styles.title, styles.titleAlign]}>Sign In</Text>
+          <Text style={styles.formTitle}>Welcome back 👋</Text>
+          <Text style={styles.formSubtitle}>Sign in to your account</Text>
 
-                        <Formik
-                            initialValues={initialValues}
-                            validationSchema={validationSchema}
-                            onSubmit={handleFormSubmit}
-                        >
-                            {({ handleChange, handleSubmit, values, errors, touched, isSubmitting }) => (
-                                <View style={styles.formContainer}>
-                                    <FormInput
-                                        field="email"
-                                        placeholder="Email"
-                                        value={values.email}
-                                        handleChange={handleChange('email')}
-                                        touched={touched}
-                                        errors={errors}
-                                    />
-                                    <FormInput
-                                        field="password"
-                                        placeholder="Password"
-                                        value={values.password}
-                                        handleChange={handleChange('password')}
-                                        touched={touched}
-                                        errors={errors}
-                                        secureTextEntry
-                                    />
+          <Formik
+            initialValues={initialValues}
+            validationSchema={validationSchema}
+            onSubmit={handleFormSubmit}
+          >
+            {({ handleChange, handleSubmit, values, errors, touched, isSubmitting }) => (
+              <>
+                <FloatingLabelInput
+                  label="Email address"
+                  value={values.email}
+                  onChangeText={handleChange('email')}
+                  iconName="mail-outline"
+                  keyboardType="email-address"
+                  error={touched.email && errors.email ? errors.email : undefined}
+                />
+                <FloatingLabelInput
+                  label="Password"
+                  value={values.password}
+                  onChangeText={handleChange('password')}
+                  iconName="lock-closed-outline"
+                  secureTextEntry
+                  secureToggle
+                  error={touched.password && errors.password ? errors.password : undefined}
+                />
 
-                                    <Text style={styles.forgotPassword}>Forgot Password ?</Text>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('ForgotPassword')}
+                  style={styles.forgotRow}
+                >
+                  <Text style={styles.forgotText}>Forgot Password?</Text>
+                </TouchableOpacity>
 
-                                    <TouchableOpacity
-                                        style={styles.button}
-                                        onPress={() => handleSubmit()}
-                                        disabled={isSubmitting}
-                                    >
-                                        <Text style={styles.buttonText}>
-                                            {isSubmitting ? 'Signing In...' : 'Sign In'}
-                                        </Text>
-                                    </TouchableOpacity>
+                <PrimaryButton
+                  label="Sign In"
+                  onPress={() => handleSubmit()}
+                  loading={isSubmitting}
+                />
 
-                                    <Text style={styles.gotAccount}>
-                                        Already have an account{' '}
-                                        <Text
-                                            style={styles.gotAccount_sub}
-                                            onPress={() => navigation.navigate('Signup')}
-                                        >
-                                            SignUp
-                                        </Text>
-                                    </Text>
-                                </View>
-                            )}
-                        </Formik>
-                    </View>
-                </ImageBackground>
-            </TouchableWithoutFeedback>
-        </KeyboardAvoidingView>
-    );
+                <View style={styles.divider}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerText}>or</Text>
+                  <View style={styles.dividerLine} />
+                </View>
+
+                <TouchableOpacity style={styles.googleBtn} activeOpacity={0.8}>
+                  <Text style={styles.googleBtnText}>🌐  Continue with Google</Text>
+                </TouchableOpacity>
+
+                <Text style={styles.signupPrompt}>
+                  Don't have an account?{' '}
+                  <Text style={styles.signupLink} onPress={() => navigation.navigate('Signup')}>
+                    Sign Up
+                  </Text>
+                </Text>
+              </>
+            )}
+          </Formik>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
+  );
 };
 
-const shadowStyles = Platform.select({
-    ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-    },
-    android: {
-        elevation: 5,
-    },
-});
-
-const inputShadow = Platform.select({
-    ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 1.41,
-    },
-    android: {
-        elevation: 2,
-    },
-});
+export default SigninScreen;
 
 const styles = StyleSheet.create({
-    keyboardView: {
-        flex: 1,
-    },
-    mainContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: semanticColors.buttonPrimary,
-    },
-    formContainer: {
-        width: '100%',
-    },
-    container1: {
-        flex: 1,
-        width: '100%',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    logo: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        marginBottom: 20,
-        color: semanticColors.textPrimary,
-    },
-    container2: {
-        width: '100%',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgb(255, 255, 255)',
-        padding: 30,
-        borderTopLeftRadius: 30,
-        borderTopRightRadius: 30,
-        borderWidth: 1,
-        borderColor: semanticColors.textSecondary,
-    },
-    title: {
-        fontSize: 18,
-        marginVertical: 10,
-        fontWeight: 'bold',
-        color: semanticColors.textPrimary,
-    },
-    titleAlign: {
-        alignSelf: 'flex-start',
-    },
-    forgotPassword: {
-        color: semanticColors.textPrimary,
-        fontSize: 14,
-        marginTop: 10,
-        alignSelf: 'flex-end',
-        marginBottom: 10,
-        textDecorationLine: 'underline',
-    },
-    gotAccount: {
-        color: semanticColors.textDescription,
-        fontSize: 14,
-        marginTop: 20,
-        alignSelf: 'center',
-        marginBottom: 5,
-    },
-    gotAccount_sub: {
-        color: semanticColors.textPrimary,
-        fontSize: 14,
-        fontWeight: 'bold',
-        textDecorationLine: 'underline',
-    },
-    button: {
-        backgroundColor: semanticColors.buttonPrimary,
-        padding: 15,
-        width: '100%',
-        alignItems: 'center',
-        marginTop: 10,
-        ...shadowStyles,
-    },
-    buttonText: {
-        color: semanticColors.textPrimary,
-        fontSize: 16,
-    },
+  root: {
+    flex: 1,
+    backgroundColor: D.bg,
+  },
+  heroBanner: {
+    paddingTop: 60,
+    paddingBottom: 36,
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  circle1: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: D.accentGlow,
+    top: -60,
+    right: -40,
+  },
+  circle2: {
+    position: 'absolute',
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: 'rgba(0,200,150,0.07)',
+    bottom: 0,
+    left: -30,
+  },
+  heroEmoji: {
+    fontSize: 52,
+    marginBottom: 8,
+  },
+  appName: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: D.textPrimary,
+    letterSpacing: -0.5,
+  },
+  heroSubtitle: {
+    fontSize: 14,
+    color: D.textSecondary,
+    marginTop: 4,
+  },
+  cardWrapper: {
+    flex: 1,
+  },
+  card: {
+    backgroundColor: D.surface,
+    marginHorizontal: 20,
+    borderRadius: D.radiusLg,
+    padding: 24,
+    marginBottom: 30,
+    borderWidth: 1,
+    borderColor: D.border,
+  },
+  formTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: D.textPrimary,
+    marginBottom: 4,
+  },
+  formSubtitle: {
+    fontSize: 14,
+    color: D.textSecondary,
+    marginBottom: 24,
+  },
+  forgotRow: {
+    alignSelf: 'flex-end',
+    marginBottom: 16,
+    marginTop: -4,
+  },
+  forgotText: {
+    color: D.accent,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+    gap: 10,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: D.border,
+  },
+  dividerText: {
+    color: D.textMuted,
+    fontSize: 13,
+  },
+  googleBtn: {
+    height: 50,
+    borderRadius: D.radius,
+    borderWidth: 1.5,
+    borderColor: D.border,
+    backgroundColor: D.surfaceCard,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  googleBtnText: {
+    color: D.textSecondary,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  signupPrompt: {
+    textAlign: 'center',
+    color: D.textMuted,
+    fontSize: 14,
+  },
+  signupLink: {
+    color: D.accent,
+    fontWeight: '700',
+  },
 });
-
-export default SigninScreen;
