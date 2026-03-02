@@ -191,7 +191,6 @@ const SettingsScreen: React.FC = () => {
                     {/* ── Security & Privacy ── */}
                     <SecLabel text="Security & Privacy" />
                     <View style={styles.card}>
-                        <SettingsRow icon="finger-print-outline"  iconBg={D.accent2Soft} iconColor={D.accent2} label="Biometric Login"   toggle toggleValue={s.bio} onToggle={() => tog('bio', 'Biometric login')} />
                         <SettingsRow icon="document-text-outline"  iconBg={D.warnSoft}    iconColor={D.warn}    label="Privacy Policy"    onPress={() => info('Opening privacy policy…')} />
                         <SettingsRow icon="newspaper-outline"      iconBg="rgba(59,130,246,0.12)" iconColor="#3b82f6" label="Terms of Service" onPress={() => info('Opening terms of service…')} last />
                     </View>
@@ -199,24 +198,8 @@ const SettingsScreen: React.FC = () => {
                     {/* ── Preferences ── */}
                     <SecLabel text="Preferences" />
                     <View style={styles.card}>
-                        <SettingsRow
-                            icon="moon-outline"
-                            iconBg={D.accentSoft} iconColor={D.accent}
-                            label="Dark Mode"
-                            toggle
-                            toggleValue={s.dark}
-                            onToggle={() => tog('dark', 'Dark mode')}
-                        />
                         <SettingsRow icon="cash-outline"   iconBg={D.accent2Soft} iconColor={D.accent2} label="Currency" value="GBP £"    onPress={() => info('Currency settings coming soon')} />
                         <SettingsRow icon="globe-outline"  iconBg="rgba(59,130,246,0.12)" iconColor="#3b82f6" label="Language" value="English" onPress={() => info('Language settings coming soon')} last />
-                    </View>
-
-                    {/* ── Help & Support ── */}
-                    <SecLabel text="Help & Support" />
-                    <View style={styles.card}>
-                        <SettingsRow icon="chatbubbles-outline" iconBg={D.accent2Soft} iconColor={D.accent2} label="Live Chat"          onPress={() => info('Opening live chat…')} />
-                        <SettingsRow icon="mail-open-outline"   iconBg={D.accentSoft}  iconColor={D.accent}  label="Contact Support"    onPress={() => info('support@groupsave.com')} />
-                        <SettingsRow icon="help-circle-outline" iconBg={D.warnSoft}    iconColor={D.warn}    label="FAQs & Help Centre" onPress={() => info('Opening help centre…')} last />
                     </View>
 
                     {/* ── Account ── */}
