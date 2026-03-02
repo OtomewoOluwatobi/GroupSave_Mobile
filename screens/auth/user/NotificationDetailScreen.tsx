@@ -17,34 +17,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { D } from '../../../theme/tokens';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-// ── Dark Theme Tokens ─────────────────────────────────────────────────────────
-const D = {
-    bg: '#0e0f17',
-    surface: '#161821',
-    surfaceHi: '#1e2030',
-    border: '#2a2d3e',
-    borderHi: '#3d4160',
-    text: '#e8eaf6',
-    textSub: '#8b8fa8',
-    textMuted: '#555870',
-    accent: '#7c8cff',
-    accentSoft: 'rgba(124, 140, 255, 0.1)',
-    accentMed: 'rgba(124, 140, 255, 0.2)',
-    accent2: '#38d9a9',
-    accent2Soft: 'rgba(56, 217, 169, 0.1)',
-    warn: '#ffa94d',
-    warnSoft: 'rgba(255, 169, 77, 0.08)',
-    danger: '#ff6b6b',
-    dangerSoft: 'rgba(255, 107, 107, 0.08)',
-    purple: '#c084fc',
-    purpleSoft: 'rgba(192, 132, 252, 0.1)',
-    gradientHeader: ['#3d4fc7', '#6a3fa5'] as const,
-    gradientAccent: ['#7c8cff', '#9b59d4'] as const,
-    gradientSuccess: ['#38d9a9', '#20b087'] as const,
-};
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type RootStackParamList = {

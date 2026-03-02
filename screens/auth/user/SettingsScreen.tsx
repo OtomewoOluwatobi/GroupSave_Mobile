@@ -15,28 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
-
-// ─── Design Tokens ────────────────────────────────────────────────────────────
-const D = {
-    bg:         '#0e0f17',
-    surface:    '#161821',
-    surfaceHi:  '#1e2030',
-    border:     '#2a2d3e',
-    text:       '#e8eaf6',
-    textSub:    '#8b8fa8',
-    textMuted:  '#555870',
-    accent:     '#7c8cff',
-    accentSoft: 'rgba(124,140,255,0.12)',
-    accent2:    '#38d9a9',
-    accent2Soft:'rgba(56,217,169,0.12)',
-    warn:       '#ffa94d',
-    warnSoft:   'rgba(255,169,77,0.12)',
-    danger:     '#ff6b6b',
-    dangerSoft: 'rgba(255,107,107,0.12)',
-    purple:     '#c084fc',
-    purpleSoft: 'rgba(192,132,252,0.12)',
-    toggleBg:   '#2a2d3e',
-};
+import { D } from '../../../theme/tokens';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type RootStackParamList = { Dashboard: undefined };

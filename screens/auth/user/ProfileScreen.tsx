@@ -9,6 +9,7 @@ import {
     StatusBar,
     ActivityIndicator,
     Platform,
+    KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,30 +18,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
-
-// ─── Design Tokens ───────────────────────────────────────────────────────────
-const D = {
-    bg:          '#0e0f17',
-    surface:     '#161821',
-    surfaceHi:   '#1e2030',
-    border:      '#2a2d3e',
-    text:        '#e8eaf6',
-    textSub:     '#8b8fa8',
-    textMuted:   '#555870',
-    accent:      '#7c8cff',
-    accentSoft:  'rgba(124,140,255,0.12)',
-    accent2:     '#38d9a9',
-    accent2Soft: 'rgba(56,217,169,0.12)',
-    warn:        '#ffa94d',
-    warnSoft:    'rgba(255,169,77,0.12)',
-    danger:      '#ff6b6b',
-    dangerSoft:  'rgba(255,107,107,0.12)',
-    purple:      '#c084fc',
-    purpleSoft:  'rgba(192,132,252,0.12)',
-    toggleBg:    '#2a2d3e',
-};
-
-
+import axios from 'axios';
+import Constants from 'expo-constants';
+import { D } from '../../../theme/tokens';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type RootStackParamList = {
@@ -56,32 +36,16 @@ interface UserData {
     status?:             string;
     email_verified_at?:  string;
     created_at?:         string;
-    groups_count?:       number;
-    total_saved?:        number;
-    referrals_count?:    number;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const initials = (n?: string) =>
     (n || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
-const fmtCurrency = (n?: number) =>
-    new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(n ?? 0);
-
 const fmtDate = (iso?: string) =>
     iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
 
 // ─── Sub-Components ───────────────────────────────────────────────────────────
-const Tile: React.FC<{ icon: string; value: string | number; label: string; color: string }> = ({
-    icon, value, label, color,
-}) => (
-    <View style={[styles.tile, { borderColor: `${color}30` }]}>
-        <Text style={styles.tileIcon}>{icon}</Text>
-        <Text style={[styles.tileValue, { color }]}>{value}</Text>
-        <Text style={styles.tileLabel}>{label}</Text>
-    </View>
-);
-
 const SecLabel: React.FC<{ text: string }> = ({ text }) => (
     <Text style={styles.sectionLabel}>{text}</Text>
 );
@@ -119,12 +83,21 @@ const InfoRow: React.FC<{
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 const ProfileScreen: React.FC = () => {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    const apiUrl = Constants.expoConfig?.extra?.apiUrl || '';
 
     const [user, setUser]       = useState<UserData>({});
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(false);
     const [name, setName]       = useState('');
     const [mobile, setMobile]   = useState('');
+
+    // Password change state
+    const [changingPassword, setChangingPassword] = useState(false);
+    const [passwordLoading, setPasswordLoading]   = useState(false);
+    const [currentPassword, setCurrentPassword]   = useState('');
+    const [newPassword, setNewPassword]           = useState('');
+    const [confirmPassword, setConfirmPassword]   = useState('');
+    const [passwordErrors, setPasswordErrors]     = useState<{ current?: string; new?: string; confirm?: string }>({});
 
     useEffect(() => {
         (async () => {
@@ -150,6 +123,56 @@ const ProfileScreen: React.FC = () => {
         Toast.show({ type: 'success', text1: 'Profile updated successfully' });
     }, [user, name, mobile]);
 
+    const resetPasswordForm = useCallback(() => {
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setPasswordErrors({});
+        setChangingPassword(false);
+    }, []);
+
+    const handleChangePassword = useCallback(async () => {
+        // Validate
+        const errors: typeof passwordErrors = {};
+        if (!currentPassword) errors.current = 'Current password is required';
+        if (!newPassword) errors.new = 'New password is required';
+        else if (newPassword.length < 8) errors.new = 'Password must be at least 8 characters';
+        if (!confirmPassword) errors.confirm = 'Please confirm your password';
+        else if (newPassword !== confirmPassword) errors.confirm = 'Passwords do not match';
+
+        if (Object.keys(errors).length > 0) {
+            setPasswordErrors(errors);
+            return;
+        }
+
+        setPasswordErrors({});
+        setPasswordLoading(true);
+
+        try {
+            const token = await AsyncStorage.getItem('token');
+            await axios.post(
+                `${apiUrl}/user/change-password`,
+                {
+                    current_password: currentPassword,
+                    password: newPassword,
+                    password_confirmation: confirmPassword,
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            Toast.show({ type: 'success', text1: 'Password changed successfully' });
+            resetPasswordForm();
+        } catch (error: any) {
+            const msg = error.response?.data?.message || 'Failed to change password';
+            if (msg.toLowerCase().includes('current')) {
+                setPasswordErrors({ current: msg });
+            } else {
+                Toast.show({ type: 'error', text1: msg });
+            }
+        } finally {
+            setPasswordLoading(false);
+        }
+    }, [apiUrl, currentPassword, newPassword, confirmPassword, resetPasswordForm]);
+
     if (loading) {
         return (
             <View style={styles.loadingWrap}>
@@ -161,11 +184,16 @@ const ProfileScreen: React.FC = () => {
     return (
         <View style={styles.root}>
             <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-            <ScrollView
-                style={styles.scroll}
-                contentContainerStyle={{ paddingBottom: 40 }}
-                showsVerticalScrollIndicator={false}
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
             >
+                <ScrollView
+                    style={styles.scroll}
+                    contentContainerStyle={{ paddingBottom: 40 }}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                >
                 {/* ── Header ── */}
                 <LinearGradient
                     colors={['#3d4fc7', '#6a3fa5']}
@@ -202,13 +230,6 @@ const ProfileScreen: React.FC = () => {
                 </LinearGradient>
 
                 <View style={styles.body}>
-                    {/* ── Stats ── */}
-                    <View style={styles.tilesRow}>
-                        <Tile icon="🏦" value={user.groups_count ?? 0}       label="Groups"    color={D.accent} />
-                        <Tile icon="💰" value={fmtCurrency(user.total_saved)} label="Saved"     color={D.accent2} />
-                        <Tile icon="👥" value={user.referrals_count ?? 0}     label="Referrals" color={D.purple} />
-                    </View>
-
                     {/* ── Personal Info ── */}
                     <SecLabel text="Personal Information" />
                     <View style={styles.card}>
@@ -294,19 +315,95 @@ const ProfileScreen: React.FC = () => {
                     {/* ── Security ── */}
                     <SecLabel text="Security" />
                     <View style={styles.card}>
-                        <InfoRow
-                            icon="key-outline"
-                            label="Change Password"
-                            onPress={() => Toast.show({ type: 'success', text1: 'Password reset email sent' })}
-                        />
-                        <InfoRow
-                            icon="phone-portrait-outline"
-                            label="Two-Factor Auth"
-                            value="OFF"
-                            valueColor={D.warn}
-                            onPress={() => Toast.show({ type: 'info', text1: '2FA coming soon' })}
-                            last
-                        />
+                        {changingPassword ? (
+                            <View style={styles.editForm}>
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.inputLabel}>Current Password</Text>
+                                    <TextInput
+                                        value={currentPassword}
+                                        onChangeText={setCurrentPassword}
+                                        style={[styles.input, passwordErrors.current && styles.inputError]}
+                                        placeholderTextColor={D.textMuted}
+                                        placeholder="Enter current password"
+                                        secureTextEntry
+                                    />
+                                    {passwordErrors.current && (
+                                        <Text style={styles.errorText}>{passwordErrors.current}</Text>
+                                    )}
+                                </View>
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.inputLabel}>New Password</Text>
+                                    <TextInput
+                                        value={newPassword}
+                                        onChangeText={setNewPassword}
+                                        style={[styles.input, passwordErrors.new && styles.inputError]}
+                                        placeholderTextColor={D.textMuted}
+                                        placeholder="Enter new password"
+                                        secureTextEntry
+                                    />
+                                    {passwordErrors.new && (
+                                        <Text style={styles.errorText}>{passwordErrors.new}</Text>
+                                    )}
+                                </View>
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.inputLabel}>Confirm New Password</Text>
+                                    <TextInput
+                                        value={confirmPassword}
+                                        onChangeText={setConfirmPassword}
+                                        style={[styles.input, passwordErrors.confirm && styles.inputError]}
+                                        placeholderTextColor={D.textMuted}
+                                        placeholder="Confirm new password"
+                                        secureTextEntry
+                                    />
+                                    {passwordErrors.confirm && (
+                                        <Text style={styles.errorText}>{passwordErrors.confirm}</Text>
+                                    )}
+                                </View>
+                                <View style={styles.editActions}>
+                                    <TouchableOpacity
+                                        style={styles.cancelBtn}
+                                        onPress={resetPasswordForm}
+                                        disabled={passwordLoading}
+                                    >
+                                        <Text style={styles.cancelBtnText}>Cancel</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={styles.saveBtn}
+                                        onPress={handleChangePassword}
+                                        disabled={passwordLoading}
+                                    >
+                                        <LinearGradient
+                                            colors={['#7c8cff', '#9b59d4']}
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 0 }}
+                                            style={styles.saveBtnGrad}
+                                        >
+                                            {passwordLoading ? (
+                                                <ActivityIndicator size="small" color="#fff" />
+                                            ) : (
+                                                <Text style={styles.saveBtnText}>Update Password</Text>
+                                            )}
+                                        </LinearGradient>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        ) : (
+                            <>
+                                <InfoRow
+                                    icon="key-outline"
+                                    label="Change Password"
+                                    onPress={() => setChangingPassword(true)}
+                                />
+                                <InfoRow
+                                    icon="phone-portrait-outline"
+                                    label="Two-Factor Auth"
+                                    value="OFF"
+                                    valueColor={D.warn}
+                                    onPress={() => Toast.show({ type: 'info', text1: '2FA coming soon' })}
+                                    last
+                                />
+                            </>
+                        )}
                     </View>
 
                     {/* ── Account ── */}
@@ -322,6 +419,7 @@ const ProfileScreen: React.FC = () => {
                     </View>
                 </View>
             </ScrollView>
+            </KeyboardAvoidingView>
         </View>
     );
 };
@@ -385,17 +483,6 @@ const styles = StyleSheet.create({
     // Body
     body: { paddingHorizontal: 16, paddingTop: 20 },
 
-    // Tiles
-    tilesRow: { flexDirection: 'row', gap: 10, marginBottom: 4 },
-    tile: {
-        flex: 1, backgroundColor: D.surfaceHi,
-        borderRadius: 14, paddingVertical: 14,
-        alignItems: 'center', borderWidth: 1,
-    },
-    tileIcon:  { fontSize: 20, marginBottom: 5 },
-    tileValue: { fontSize: 16, fontWeight: '800', marginBottom: 3 },
-    tileLabel: { fontSize: 9, color: D.textMuted, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase' },
-
     // Section label
     sectionLabel: {
         fontSize: 10, fontWeight: '700', color: D.textMuted,
@@ -447,9 +534,11 @@ const styles = StyleSheet.create({
     saveBtn: { flex: 2, borderRadius: 12, overflow: 'hidden' },
     saveBtnGrad: { paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
     saveBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+    inputError: { borderColor: D.danger },
+    errorText: { color: D.danger, fontSize: 12, marginTop: 4 },
 
     // Edit profile button
-    editProfileBtn: { borderRadius: 14, overflow: 'hidden', marginBottom: 4 },
+    editProfileBtn: { borderRadius: 14, overflow: 'hidden', marginBottom: 4, marginTop: 8 },
     editProfileGrad: {
         paddingVertical: 14, flexDirection: 'row',
         alignItems: 'center', justifyContent: 'center',
