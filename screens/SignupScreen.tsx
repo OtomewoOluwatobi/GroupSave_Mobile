@@ -87,12 +87,19 @@ function SignupScreen() {
 
     setReferralValidating(true);
     try {
-      await axios.post(`${apiUrl}/referral/validate`, { code });
-      setReferralValid(true);
-      setReferralError('');
+      const response = await axios.post<{ success: boolean; message: string }>(`${apiUrl}/referral/validate`, { referral_code: code });
+      // Check if API returns success field
+      if (response.data?.success) {
+        setReferralValid(true);
+        setReferralError('');
+      } else {
+        setReferralValid(false);
+        setReferralError(response.data?.message || 'Invalid referral code');
+      }
     } catch (error: any) {
+      console.log('Referral validation error:', error.response?.data || error.message);
       setReferralValid(false);
-      setReferralError(error.response?.data?.message || 'Invalid referral code');
+      setReferralError(error.response?.data?.message || 'Could not validate referral code');
     } finally {
       setReferralValidating(false);
     }
@@ -154,22 +161,89 @@ function SignupScreen() {
 
     setLoading(true);
     try {
-      const response = await axios.post<{ message: string }>(`${apiUrl}/auth/register`, {
+      const payload = {
         name: formData.name,
         email: formData.email,
         mobile: formData.mobile,
         password: formData.password,
         password_confirmation: formData.password_confirmation,
         ...(referralValid && formData.referralCode.trim() ? { referral_code: formData.referralCode.trim() } : {}),
-      });
+      };
+      
+      console.log('=== REGISTRATION PAYLOAD ===');
+      console.log('URL:', `${apiUrl}/auth/register`);
+      console.log('Payload:', JSON.stringify(payload, null, 2));
+      console.log('============================');
+      
+      const response = await axios.post<{ message: string }>(`${apiUrl}/auth/register`, payload);
+      console.log('Registration response:', {response, formData: { ...formData, referralCode: undefined }});
       if (response.status === 201) {
         setStep(2);
       } else {
         Dialog.show({ type: ALERT_TYPE.DANGER, title: 'Registration Failed', textBody: response.data.message || 'Bad request.', button: 'Close' });
+        console.log('Unexpected registration response:', response);
       }
     } catch (error: any) {
-      const msg = error.response?.data?.message || error.message || 'An error occurred.';
-      Dialog.show({ type: ALERT_TYPE.DANGER, title: 'Registration Error', textBody: msg, button: 'Close' });
+      console.log('=== REGISTRATION ERROR ===');
+      console.log('Full error response:', JSON.stringify(error.response?.data, null, 2));
+      console.log('Status:', error.response?.status);
+      console.log('Validation errors:', error.response?.data?.errors);
+      console.log('Message:', error.response?.data?.message);
+      console.log('==========================');
+      
+      // Handle Laravel validation errors
+      const validationErrors = error.response?.data?.errors;
+      if (validationErrors && typeof validationErrors === 'object') {
+        const step1Fields = ['name', 'email', 'mobile', 'referral_code'];
+        const step2Fields = ['password', 'password_confirmation'];
+        
+        const newStep1Errors: Partial<typeof formData> = {};
+        const newStep2Errors: Partial<typeof formData> = {};
+        let hasStep1Errors = false;
+        
+        // Map Laravel validation errors to form fields
+        Object.entries(validationErrors).forEach(([field, messages]) => {
+          const errorMsg = Array.isArray(messages) ? messages[0] : String(messages);
+          
+          if (step1Fields.includes(field)) {
+            // Map referral_code to referralCode
+            const fieldKey = field === 'referral_code' ? 'referralCode' : field;
+            newStep1Errors[fieldKey as keyof typeof formData] = errorMsg;
+            hasStep1Errors = true;
+          } else if (step2Fields.includes(field)) {
+            newStep2Errors[field as keyof typeof formData] = errorMsg;
+          }
+        });
+        
+        // Update error states
+        if (Object.keys(newStep1Errors).length > 0) {
+          setStep1Errors(newStep1Errors);
+        }
+        if (Object.keys(newStep2Errors).length > 0) {
+          setStep2Errors(newStep2Errors);
+        }
+        
+        // Navigate back to step 0 if there are step 1 field errors
+        if (hasStep1Errors) {
+          setStep(0);
+        }
+        
+        // Show a summary dialog
+        const errorMessages = Object.values(validationErrors)
+          .flat()
+          .slice(0, 3) // Show max 3 errors
+          .join('\n• ');
+        Dialog.show({
+          type: ALERT_TYPE.WARNING,
+          title: 'Please fix the following',
+          textBody: `• ${errorMessages}`,
+          button: 'OK',
+        });
+      } else {
+        // Generic error message
+        const msg = error.response?.data?.message || error.message || 'An error occurred.';
+        Dialog.show({ type: ALERT_TYPE.DANGER, title: 'Registration Error', textBody: msg, button: 'Close' });
+      }
     } finally {
       setLoading(false);
     }

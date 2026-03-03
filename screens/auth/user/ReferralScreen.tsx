@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Clipboard from 'expo-clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
@@ -147,10 +148,15 @@ const ReferralScreen: React.FC = () => {
     const milestone    = 50;
     const progress     = Math.min((earnings / milestone) * 100, 100);
 
-    const handleCopy = useCallback(() => {
-        setCopied(true);
-        Toast.show({ type: 'success', text1: `Code "${referralCode}" copied!` });
-        setTimeout(() => setCopied(false), 2000);
+    const handleCopy = useCallback(async () => {
+        try {
+            await Clipboard.setStringAsync(referralCode);
+            setCopied(true);
+            Toast.show({ type: 'success', text1: `Code "${referralCode}" copied!` });
+            setTimeout(() => setCopied(false), 2000);
+        } catch (error) {
+            Toast.show({ type: 'error', text1: 'Failed to copy code' });
+        }
     }, [referralCode]);
 
     const handleShare = useCallback(async (method: string) => {
