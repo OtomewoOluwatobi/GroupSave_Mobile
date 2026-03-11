@@ -23,11 +23,11 @@ interface PrimaryButtonProps {
   fullWidth?: boolean;
 }
 
-const gradients: Record<string, string[]> = {
-  primary: D.accentGrad,
-  success: D.successGrad,
-  ghost: ['transparent', 'transparent'],
-  danger: ['#ff5c7c', '#c0183a'],
+const gradients: Record<string, readonly [string, string]> = {
+  primary: D.accentGrad,          // #2a52a0 → #CADCFC
+  success: D.successGrad,         // #00c896 → #008f6b
+  ghost:   ['transparent', 'transparent'],
+  danger:  ['#ff5c7c', '#c0183a'],
 };
 
 export default function PrimaryButton({
@@ -60,7 +60,7 @@ export default function PrimaryButton({
         ]}
       >
         {loading ? (
-          <ActivityIndicator color={isGhost ? D.accent : '#fff'} size="small" />
+          <ActivityIndicator color={isGhost ? D.accent : D.primary} size="small" />
         ) : (
           <Text
             style={[
@@ -87,18 +87,18 @@ const styles = StyleSheet.create({
   },
   btnGhost: {
     borderWidth: 1.5,
-    borderColor: D.accent,
+    borderColor: D.borderAccent,  // rgba(202,220,252,0.45)
   },
   btnDisabled: {
     opacity: 0.5,
   },
   label: {
-    color: '#fff',
+    color: D.primary,             // #00246B — dark text on Periwinkle gradient
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.4,
   },
   labelGhost: {
-    color: D.accent,
+    color: D.accent,              // #CADCFC
   },
 });

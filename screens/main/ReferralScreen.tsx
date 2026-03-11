@@ -182,7 +182,7 @@ const ReferralScreen: React.FC = () => {
     if (loading) {
         return (
             <View style={styles.loadingWrap}>
-                <ActivityIndicator size="large" color={D.accent2} />
+                <ActivityIndicator size="large" color={D.success} />
             </View>
         );
     }
@@ -284,7 +284,7 @@ const ReferralScreen: React.FC = () => {
                         <View style={styles.earningsRow}>
                             <View>
                                 <Text style={styles.earningsSubLabel}>Total Earned</Text>
-                                <Text style={[styles.earningsBig, { color: D.accent2 }]}>
+                                <Text style={[styles.earningsBig, { color: D.success }]}>
                                     {fmtPoints(earnings)}
                                 </Text>
                             </View>
@@ -315,7 +315,7 @@ const ReferralScreen: React.FC = () => {
                             { icon: '💬', label: 'WhatsApp', color: '#25d366' },
                             { icon: '📧', label: 'Email',    color: D.accent },
                             { icon: '📱', label: 'SMS',      color: D.warn },
-                            { icon: '🔗', label: 'Share',    color: D.purple },
+                            { icon: '🔗', label: 'Share',    color: D.blueMid },
                         ].map(s => (
                             <TouchableOpacity
                                 key={s.label}
@@ -349,16 +349,16 @@ const ReferralScreen: React.FC = () => {
                                         styles.refAvatar,
                                         {
                                             backgroundColor: r.status === 'active'
-                                                ? D.accent2Soft : D.warnSoft,
+                                                ? D.successGrad[1] + '22' : D.warnSoft,
                                             borderColor: r.status === 'active'
-                                                ? `${D.accent2}30` : `${D.warn}30`,
+                                                ? `${D.success}30` : `${D.warn}30`,
                                         },
                                     ]}
                                 >
                                     <Text
                                         style={[
                                             styles.refAvatarText,
-                                            { color: r.status === 'active' ? D.accent2 : D.warn },
+                                            { color: r.status === 'active' ? D.success : D.warn },
                                         ]}
                                     >
                                         {r.referred_user?.initials || initials(r.referred_user?.name)}
@@ -372,7 +372,7 @@ const ReferralScreen: React.FC = () => {
                                     <Text
                                         style={[
                                             styles.refReward,
-                                            { color: r.status === 'active' ? D.accent2 : D.textMuted },
+                                            { color: r.status === 'active' ? D.success : D.textMuted },
                                         ]}
                                     >
                                         {r.status === 'active' ? `+${fmtPoints(r.points_awarded)}` : 'Pending'}
@@ -382,14 +382,14 @@ const ReferralScreen: React.FC = () => {
                                             styles.refStatusPill,
                                             {
                                                 backgroundColor: r.status === 'active'
-                                                    ? D.accent2Soft : D.warnSoft,
+                                                    ? D.successGrad[1] + '22' : D.warnSoft,
                                             },
                                         ]}
                                     >
                                         <Text
                                             style={[
                                                 styles.refStatusText,
-                                                { color: r.status === 'active' ? D.accent2 : D.warn },
+                                                { color: r.status === 'active' ? D.success : D.warn },
                                             ]}
                                         >
                                             {r.status.toUpperCase()}
@@ -414,7 +414,7 @@ const ReferralScreen: React.FC = () => {
                                 style={[styles.howRow, idx < arr.length - 1 && styles.howRowBorder]}
                             >
                                 <LinearGradient
-                                    colors={['#7c8cff', '#9b59d4']}
+                                    colors={['#00246B', '#1a3a7a']}
                                     style={styles.howBadge}
                                 >
                                     <Text style={styles.howBadgeIcon}>{s.icon}</Text>
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
         paddingVertical: 14, alignItems: 'center',
     },
     codeText: {
-        fontSize: 22, fontWeight: '800', color: D.accent2,
+        fontSize: 22, fontWeight: '800', color: D.success,
         letterSpacing: 5, fontVariant: ['tabular-nums'],
     },
     copyBtn:     { borderRadius: 12, overflow: 'hidden' },

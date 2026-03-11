@@ -35,7 +35,7 @@ const FormTextArea: React.FC<FormTextAreaProps> = ({
           showError && styles.textAreaError
         ]}
         placeholder={placeholder}
-        placeholderTextColor={semanticColors.inputPlaceholder}
+        placeholderTextColor={semanticColors.textMuted}
         value={value}
         onChangeText={handleChange}
         multiline
@@ -60,17 +60,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 12,
     fontSize: 16,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: semanticColors.inputBorder,
+    borderColor: semanticColors.border,
     minHeight: 100,
     marginVertical: 10,
-    color: semanticColors.inputText,
+    color: semanticColors.textPrimary,
   },
   textAreaError: {
-    borderColor: semanticColors.textError,
+    borderColor: semanticColors.dangerText,
   },
   errorText: {
-    color: semanticColors.textError,
+    color: semanticColors.dangerText,
     fontSize: 12,
     marginTop: 4,
     marginLeft: 4,

@@ -196,7 +196,7 @@ const ProfileScreen: React.FC = () => {
                 >
                 {/* ── Header ── */}
                 <LinearGradient
-                    colors={['#3d4fc7', '#6a3fa5']}
+                    colors={['#00246B', '#1a3a7a']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.header}
@@ -209,7 +209,7 @@ const ProfileScreen: React.FC = () => {
                         <View style={styles.avatarSection}>
                             <View style={styles.avatarOuter}>
                                 <LinearGradient
-                                    colors={['#7c8cff', '#c084fc']}
+                                    colors={['#2a52a0', '#CADCFC']}
                                     style={styles.avatar}
                                 >
                                     <Text style={styles.avatarText}>{initials(name)}</Text>
@@ -261,7 +261,7 @@ const ProfileScreen: React.FC = () => {
                                         onPress={handleSave}
                                     >
                                         <LinearGradient
-                                            colors={['#7c8cff', '#9b59d4']}
+                                            colors={['#2a52a0', '#CADCFC']}
                                             start={{ x: 0, y: 0 }}
                                             end={{ x: 1, y: 0 }}
                                             style={styles.saveBtnGrad}
@@ -277,7 +277,7 @@ const ProfileScreen: React.FC = () => {
                                 <InfoRow icon="mail-outline"        label="Email"         value={user.email} />
                                 <InfoRow icon="call-outline"        label="Mobile"        value={mobile || '—'} />
                                 <InfoRow icon="calendar-outline"    label="Member Since"  value={fmtDate(user.created_at)} />
-                                <InfoRow icon="checkmark-circle-outline" label="Email Verified" value="Verified" valueColor={D.accent2} last />
+                                <InfoRow icon="checkmark-circle-outline" label="Email Verified" value="Verified" valueColor={D.success} last />
                             </>
                         )}
                     </View>
@@ -285,7 +285,7 @@ const ProfileScreen: React.FC = () => {
                     {!editing && (
                         <TouchableOpacity style={styles.editProfileBtn} onPress={() => setEditing(true)}>
                             <LinearGradient
-                                colors={['#7c8cff', '#9b59d4']}
+                                colors={['#2a52a0', '#CADCFC']}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}
                                 style={styles.editProfileGrad}
@@ -373,7 +373,7 @@ const ProfileScreen: React.FC = () => {
                                         disabled={passwordLoading}
                                     >
                                         <LinearGradient
-                                            colors={['#7c8cff', '#9b59d4']}
+                                            colors={['#2a52a0', '#CADCFC']}
                                             start={{ x: 0, y: 0 }}
                                             end={{ x: 1, y: 0 }}
                                             style={styles.saveBtnGrad}
@@ -466,9 +466,9 @@ const styles = StyleSheet.create({
     verifiedBadge: {
         position: 'absolute', bottom: 2, right: 2,
         width: 22, height: 22, borderRadius: 11,
-        backgroundColor: '#38d9a9',
+        backgroundColor: D.success,
         alignItems: 'center', justifyContent: 'center',
-        borderWidth: 2, borderColor: '#3d4fc7',
+        borderWidth: 2, borderColor: D.primary,
     },
     headerName:  { fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 4 },
     headerEmail: { fontSize: 12, color: 'rgba(255,255,255,0.65)', marginBottom: 12 },

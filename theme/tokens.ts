@@ -1,74 +1,81 @@
-/** Shared dark design tokens — imported by all screens & components */
+/** GroupSave — Shared dark design tokens — imported by all screens & components */
 export const D = {
-  // Backgrounds
-  bg: '#0e0f17',
-  surface: '#161821',
-  surfaceHi: '#1e2030',
-  surfaceCard: '#1e2030',
-  surfaceInput: '#1a1c2a',
+  // ── Backgrounds ──────────────────────────────────────────────────────────────
+  bg: '#000f2e',               // Root screen background
+  surface: 'rgba(255,255,255,0.04)',// List items, section containers
+  surfaceHi: 'rgba(0,20,60,0.90)',    // Elevated card / modal
+  surfaceCard: 'rgba(0,20,60,0.90)',    // Card background
+  surfaceInput: 'rgba(255,255,255,0.04)',// Text input background
 
-  // Accent (primary)
-  accent: '#7c8cff',
-  accentSoft: 'rgba(124,140,255,0.12)',
-  accentMed: 'rgba(124,140,255,0.2)',
-  accentGlow: 'rgba(124,140,255,0.18)',
-  accentGrad: ['#7c8cff', '#4e5bcc'] as const,
+  // ── Accent (primary brand) ────────────────────────────────────────────────────
+  accent: '#CADCFC',              // Periwinkle — primary accent
+  accentSoft: 'rgba(202,220,252,0.15)',// Subtle fills, badge tints
+  accentMed: 'rgba(202,220,252,0.25)',// Step circles, focused borders
+  accentGlow: 'rgba(202,220,252,0.18)',// Button glow, shadow
+  accentGrad: ['#2a52a0', '#CADCFC'] as const, // Progress bar, primary btn gradient
 
-  // Accent2 (teal/green)
-  accent2: '#38d9a9',
-  accent2Soft: 'rgba(56,217,169,0.12)',
+  // ── Brand blues ───────────────────────────────────────────────────────────────
+  primary: '#00246B',              // Deep Navy — on-accent text, icon bg
+  primaryMid: '#1a3a7a',              // Dark Navy — hover / pressed states
+  blueMid: '#2a52a0',              // Mid Blue — secondary elements, avatars
+  accentLight: '#a8c4f8',             // Light Blue — chips, tag backgrounds
 
-  // Purple
-  purple: '#c084fc',
-  purpleSoft: 'rgba(192,132,252,0.12)',
+  // ── Backward-compat aliases (replace old purple / teal palette) ────────────────
+  /** @deprecated use D.success — mapped to GroupSave success green */
+  accent2: '#00c896',
+  /** @deprecated use D.successGrad — mapped to GroupSave success soft */
+  accent2Soft: 'rgba(0,200,150,0.12)',
+  /** @deprecated use D.blueMid — mapped to GroupSave Mid Blue */
+  purple: '#2a52a0',
+  /** @deprecated use D.accentSoft — mapped to GroupSave Periwinkle soft */
+  purpleSoft: 'rgba(202,220,252,0.15)',
 
-  // Success
+  // ── Status — unchanged (accessible on dark bg) ───────────────────────────────
   success: '#00c896',
   successGrad: ['#00c896', '#008f6b'] as const,
 
-  // Warning
   warn: '#ffa94d',
   warnSoft: 'rgba(255,169,77,0.12)',
   warning: '#f5a623',
 
-  // Danger
   danger: '#ff6b6b',
   dangerSoft: 'rgba(255,107,107,0.12)',
 
-  // Text
-  text: '#e8eaf6',
-  textPrimary: '#ffffff',
-  textSub: '#8b8fa8',
-  textSecondary: '#a0a8cc',
-  textMuted: '#555870',
-  textPlaceholder: '#4a5070',
+  // ── Text ──────────────────────────────────────────────────────────────────────
+  text: '#e8f0fd',                   // Primary text
+  textPrimary: '#e8f0fd',
+  textSub: 'rgba(232,240,253,0.45)',    // Subtitles, supporting text
+  textSecondary: 'rgba(232,240,253,0.45)',
+  textMuted: 'rgba(232,240,253,0.22)',    // Disabled, timestamps
+  textPlaceholder: 'rgba(232,240,253,0.30)',    // Input placeholders
 
-  // Border
-  border: '#2a2d3e',
-  borderHi: '#3d4160',
-  borderFocus: '#7c8cff',
+  // ── Borders ───────────────────────────────────────────────────────────────────
+  border: 'rgba(255,255,255,0.07)',
+  borderHi: 'rgba(255,255,255,0.12)',
+  borderFocus: 'rgba(202,220,252,0.50)',
+  borderAccent: 'rgba(202,220,252,0.45)',
 
-  // Toggle
-  toggleBg: '#2a2d3e',
+  // ── Toggle ────────────────────────────────────────────────────────────────────
+  toggleBg: 'rgba(255,255,255,0.07)',
 
-  // Gradients
-  gradientHeader: ['#3d4fc7', '#6a3fa5'] as const,
-  gradientAccent: ['#7c8cff', '#9b59d4'] as const,
-  gradientSuccess: ['#38d9a9', '#20b087'] as const,
+  // ── Gradients ─────────────────────────────────────────────────────────────────
+  gradientHeader: ['#00246B', '#1a3a7a'] as const,
+  gradientAccent: ['#2a52a0', '#CADCFC'] as const,
+  gradientSuccess: ['#00c896', '#008f6b'] as const,
 
-  // Overlay / scrim
-  overlay: 'rgba(14,15,23,0.85)',
+  // ── Overlay / scrim ───────────────────────────────────────────────────────────
+  overlay: 'rgba(0,9,30,0.85)',
 
-  // Radius
+  // ── Radius ────────────────────────────────────────────────────────────────────
   radius: 16,
   radiusSm: 10,
   radiusLg: 24,
 
-  // Shadow helper (android elevation + iOS params)
+  // ── Shadow (android elevation + iOS params) ───────────────────────────────────
   shadow: {
-    shadowColor: '#7c8cff',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.45,
     shadowRadius: 12,
     elevation: 6,
   },

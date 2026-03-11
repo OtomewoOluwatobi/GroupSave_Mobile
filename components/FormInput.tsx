@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { TextInput, Text, StyleSheet, Platform, KeyboardTypeOptions } from 'react-native';
+import { TextInput, Text, StyleSheet, KeyboardTypeOptions } from 'react-native';
 import { semanticColors } from '../theme/semanticColors';
 
 type FormInputProps = {
@@ -29,8 +29,9 @@ const FormInput: React.FC<FormInputProps> = ({
             <TextInput
                 style={styles.input}
                 placeholder={placeholder}
+                placeholderTextColor={semanticColors.textMuted}
                 value={value}
-                onChangeText={(value) => handleChange?.(value)} // Use optional chaining
+                onChangeText={(value) => handleChange?.(value)}
                 secureTextEntry={secureTextEntry}
             />
             {field && touched[field] && errors[field] && (
@@ -45,15 +46,16 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 50,
         borderWidth: 1,
-        borderColor: semanticColors.textSecondary,
+        borderColor: semanticColors.border,
+        borderRadius: 10,
         marginVertical: 10,
-        paddingHorizontal: 10,
-        backgroundColor: 'rgb(255, 255, 255)',
-        color: '#111111',
+        paddingHorizontal: 14,
+        backgroundColor: semanticColors.inputBackground,
+        color: semanticColors.textPrimary,
         fontSize: 16,
     },
     error: {
-        color: '#ef4444',
+        color: semanticColors.dangerText,
         fontSize: 12,
         marginTop: 4,
         marginLeft: 4,

@@ -80,32 +80,32 @@ const relTime = (iso: string) => {
 };
 
 const AVATAR_PALETTE = [
-    { bg: 'rgba(124, 140, 255, 0.15)', fg: '#7c8cff' },
-    { bg: 'rgba(56, 217, 169, 0.15)', fg: '#38d9a9' },
-    { bg: 'rgba(255, 169, 77, 0.15)', fg: '#ffa94d' },
+    { bg: 'rgba(202, 220, 252, 0.15)', fg: '#CADCFC' },
+    { bg: 'rgba(56, 217, 169, 0.15)',  fg: '#38d9a9' },
+    { bg: 'rgba(255, 169, 77, 0.15)',  fg: '#ffa94d' },
     { bg: 'rgba(255, 107, 107, 0.15)', fg: '#ff6b6b' },
-    { bg: 'rgba(192, 132, 252, 0.15)', fg: '#c084fc' },
+    { bg: 'rgba(42, 82, 160, 0.15)',   fg: '#2a52a0' },
 ];
 
 const getAvatarColor = (id: number) => AVATAR_PALETTE[(id || 0) % AVATAR_PALETTE.length];
 
 // ── Notification Type Config ──────────────────────────────────────────────────
 const NOTIF_TYPE_CONFIG: { [key: string]: { icon: string; color: string; colorSoft: string; cta: string } } = {
-    login: { icon: '🔐', color: '#7c8cff', colorSoft: 'rgba(124,140,255,0.1)', cta: 'View Details' },
-    group_created: { icon: '🏦', color: '#7c8cff', colorSoft: 'rgba(124,140,255,0.1)', cta: 'View Group' },
-    group_joined: { icon: '🏦', color: '#7c8cff', colorSoft: 'rgba(124,140,255,0.1)', cta: 'View Group' },
-    group_join_request: { icon: '👋', color: '#ffa94d', colorSoft: 'rgba(255,169,77,0.08)', cta: 'Review' },
-    member_joined: { icon: '✅', color: '#38d9a9', colorSoft: 'rgba(56,217,169,0.1)', cta: 'View Group' },
-    member_pending: { icon: '⏳', color: '#ffa94d', colorSoft: 'rgba(255,169,77,0.08)', cta: 'Remind' },
-    invitation_pending: { icon: '⏳', color: '#ffa94d', colorSoft: 'rgba(255,169,77,0.08)', cta: 'Remind' },
-    invitation_accepted: { icon: '✅', color: '#38d9a9', colorSoft: 'rgba(56,217,169,0.1)', cta: 'View Group' },
+    login:               { icon: '🔐', color: '#CADCFC', colorSoft: 'rgba(202,220,252,0.10)', cta: 'View Details' },
+    group_created:       { icon: '🏦', color: '#CADCFC', colorSoft: 'rgba(202,220,252,0.10)', cta: 'View Group' },
+    group_joined:        { icon: '🏦', color: '#CADCFC', colorSoft: 'rgba(202,220,252,0.10)', cta: 'View Group' },
+    group_join_request:  { icon: '👋', color: '#ffa94d', colorSoft: 'rgba(255,169,77,0.08)',  cta: 'Review' },
+    member_joined:       { icon: '✅', color: '#38d9a9', colorSoft: 'rgba(56,217,169,0.1)',   cta: 'View Group' },
+    member_pending:      { icon: '⏳', color: '#ffa94d', colorSoft: 'rgba(255,169,77,0.08)',  cta: 'Remind' },
+    invitation_pending:  { icon: '⏳', color: '#ffa94d', colorSoft: 'rgba(255,169,77,0.08)',  cta: 'Remind' },
+    invitation_accepted: { icon: '✅', color: '#38d9a9', colorSoft: 'rgba(56,217,169,0.1)',   cta: 'View Group' },
     invitation_declined: { icon: '❌', color: '#ff6b6b', colorSoft: 'rgba(255,107,107,0.08)', cta: 'View Group' },
-    group_starting: { icon: '🚀', color: '#c084fc', colorSoft: 'rgba(192, 132, 252, 0.1)', cta: 'View Schedule' },
-    payment_due: { icon: '💳', color: '#ff6b6b', colorSoft: 'rgba(255,107,107,0.08)', cta: 'Pay Now' },
-    payment_received: { icon: '💰', color: '#38d9a9', colorSoft: 'rgba(56,217,169,0.1)', cta: 'View Details' },
-    payment_reminder: { icon: '⏰', color: '#ffa94d', colorSoft: 'rgba(255,169,77,0.08)', cta: 'Pay Now' },
-    payout_received: { icon: '🎉', color: '#38d9a9', colorSoft: 'rgba(56,217,169,0.1)', cta: 'View Details' },
-    default: { icon: '🔔', color: '#7c8cff', colorSoft: 'rgba(124,140,255,0.1)', cta: 'View' },
+    group_starting:      { icon: '🚀', color: '#2a52a0', colorSoft: 'rgba(42,82,160,0.10)',   cta: 'View Schedule' },
+    payment_due:         { icon: '💳', color: '#ff6b6b', colorSoft: 'rgba(255,107,107,0.08)', cta: 'Pay Now' },
+    payment_received:    { icon: '💰', color: '#38d9a9', colorSoft: 'rgba(56,217,169,0.1)',   cta: 'View Details' },
+    payment_reminder:    { icon: '⏰', color: '#ffa94d', colorSoft: 'rgba(255,169,77,0.08)',  cta: 'Pay Now' },
+    payout_received:     { icon: '🎉', color: '#38d9a9', colorSoft: 'rgba(56,217,169,0.1)',   cta: 'View Details' },
+    default:             { icon: '🔔', color: '#CADCFC', colorSoft: 'rgba(202,220,252,0.10)', cta: 'View' },
 };
 
 // ── Extract notification type from Laravel class name or data ─────────────────
@@ -992,7 +992,7 @@ const styles = StyleSheet.create({
         elevation: 10,
     },
     toastCheck: {
-        color: D.accent2,
+        color: D.success,
         fontSize: 14,
     },
     toastText: {
