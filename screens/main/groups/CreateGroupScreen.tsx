@@ -1199,7 +1199,7 @@ const CreateGroupScreen = () => {
                                     </Text>
                                 </View>
 
-                                {/* Slots Overview */}
+                                {/* Slots Overview — filled slots show the email + a remove button */}
                                 <View style={styles.slotsContainer}>
                                     {Array.from({ length: parseInt(form.total_users) - 1 || 0 }).map((_, i) => {
                                         const filled = form.members_emails[i];
@@ -1222,6 +1222,14 @@ const CreateGroupScreen = () => {
                                                 >
                                                     {filled || `Slot ${i + 1}`}
                                                 </Text>
+                                                {filled && (
+                                                    <TouchableOpacity
+                                                        onPress={() => removeEmail(i)}
+                                                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                                                    >
+                                                        <Ionicons name="close-circle" size={16} color={D.danger} />
+                                                    </TouchableOpacity>
+                                                )}
                                             </View>
                                         );
                                     })}
@@ -1266,30 +1274,6 @@ const CreateGroupScreen = () => {
                                         </TouchableOpacity>
                                     </View>
                                 </Field>
-
-                                {/* Added Emails */}
-                                {form.members_emails.length > 0 && (
-                                    <View style={styles.emailList}>
-                                        {form.members_emails.map((email, i) => (
-                                            <View key={i} style={styles.emailItem}>
-                                                <View style={styles.emailAvatar}>
-                                                    <Text style={styles.emailAvatarText}>
-                                                        {email[0].toUpperCase()}
-                                                    </Text>
-                                                </View>
-                                                <Text style={styles.emailText} numberOfLines={1}>
-                                                    {email}
-                                                </Text>
-                                                <TouchableOpacity
-                                                    style={styles.removeButton}
-                                                    onPress={() => removeEmail(i)}
-                                                >
-                                                    <Text style={styles.removeButtonText}>✕</Text>
-                                                </TouchableOpacity>
-                                            </View>
-                                        ))}
-                                    </View>
-                                )}
 
                                 {/* Progress */}
                                 <View style={styles.progressContainer}>
