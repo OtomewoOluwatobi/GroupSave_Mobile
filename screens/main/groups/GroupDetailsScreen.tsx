@@ -79,6 +79,10 @@ type RootStackParamList = {
         payout_position?: number;
         payment_out_day?: number;
     };
+    AdminContributions: {
+        group_id: number;
+        group_title: string;
+    };
     Signin: undefined;
 };
 
@@ -1023,6 +1027,18 @@ const GroupDetailsScreen = () => {
                         >
                             <Text style={styles.btnSTxt}>Invite member</Text>
                         </TouchableOpacity>
+                        {role.toLowerCase() === 'admin' && (
+                            <TouchableOpacity
+                                style={[styles.btnS, { borderColor: 'rgba(0,214,143,0.35)', backgroundColor: 'rgba(0,214,143,0.08)' }]}
+                                onPress={() => navigation.navigate('AdminContributions', {
+                                    group_id: group.id,
+                                    group_title: group.title,
+                                })}
+                                activeOpacity={0.85}
+                            >
+                                <Text style={[styles.btnSTxt, { color: '#00d68f' }]}>Review Contributions</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
 
                     <View style={{ height: 32 }} />
