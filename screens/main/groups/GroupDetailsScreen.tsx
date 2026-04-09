@@ -11,6 +11,8 @@ import {
     Animated,
     ActivityIndicator,
     Platform,
+    Modal,
+    FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, RouteProp, useNavigation, NavigationProp, useFocusEffect } from '@react-navigation/native';
@@ -26,6 +28,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface GroupUser {
+    id?: string;
     name?: string;
     mobile?: string;
     email?: string;
@@ -37,13 +40,14 @@ interface GroupUser {
 }
 
 interface Group {
-    id: number;
-    owner_id: number;
+    id: string;
+    owner_id: string;
     title: string;
     target_amount: number;
     payable_amount?: number;
     total_users: number;
-    active_users_count: number;
+    active_members_count: number;
+    pending_members_count?: number;
     current_month?: number;
     expected_start_date?: string;
     expected_end_date?: string;
@@ -53,11 +57,11 @@ interface Group {
 }
 
 interface JoinRequest {
-    id: number;
+    id: string;
     status: string;
     created_at: string;
     updated_at: string;
-    user_id: number;
+    user_id: string;
     user_name: string;
     user_email: string;
 }
@@ -66,21 +70,22 @@ interface GroupApiResponse {
     message: string;
     data: {
         group: Group;
+        pending_invitees: GroupUser[];
         join_requests: JoinRequest[];
     };
 }
 
 type RootStackParamList = {
-    GroupDetails: { group_id: number };
+    GroupDetails: { group_id: string };
     Contribute: {
-        group_id: number;
+        group_id: string;
         group_title: string;
         payable_amount: number;
         payout_position?: number;
         payment_out_day?: number;
     };
     AdminContributions: {
-        group_id: number;
+        group_id: string;
         group_title: string;
     };
     Signin: undefined;
@@ -280,8 +285,8 @@ const JoinRequestCard = ({
     processingAction,
 }: { 
     request: JoinRequest; 
-    onAccept: (requestId: number) => void;
-    onDecline: (requestId: number) => void;
+    onAccept: (requestId: string) => void;
+    onDecline: (requestId: string) => void;
     processingAction: 'accept' | 'decline' | null;
 }) => {
     const requestDate = new Date(request.created_at);
@@ -516,7 +521,7 @@ const CACHE_DURATION = 20 * 1000; // 20 seconds
 const GroupDetailsScreen = () => {
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
     const route = useRoute<RouteProp<RootStackParamList, 'GroupDetails'>>();
-    const { group_id } = route.params ?? { group_id: 0 };
+    const { group_id } = route.params ?? { group_id: '' };
 
     const [group, setGroup] = React.useState<Group | null>(null);
     const [joinRequests, setJoinRequests] = React.useState<JoinRequest[]>([]);
@@ -525,7 +530,11 @@ const GroupDetailsScreen = () => {
     const [isInGroup, setIsInGroup] = React.useState<boolean>(false);
     const [joining, setJoining] = React.useState<boolean>(false);
     const [myPosition, setMyPosition] = React.useState<number | null>(null);
-    const [processingRequest, setProcessingRequest] = React.useState<{ id: number; action: 'accept' | 'decline' } | null>(null);
+    const [pendingInvitees, setPendingInvitees] = React.useState<GroupUser[]>([]);
+    const [processingRequest, setProcessingRequest] = React.useState<{ id: string; action: 'accept' | 'decline' } | null>(null);
+    const [replacePicker, setReplacePicker] = React.useState<{ requestId: string; requesterName: string } | null>(null);
+    const [selectedReplaceId, setSelectedReplaceId] = React.useState<string | null>(null);
+    const [approving, setApproving] = React.useState(false);
     const [loading, setLoading] = React.useState<boolean>(true);
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
     const lastFetchRef = React.useRef<number>(0);
@@ -538,8 +547,9 @@ const GroupDetailsScreen = () => {
                 const cacheKey = `cache_group_${group_id}`;
                 const cachedData = await AsyncStorage.getItem(cacheKey);
                 if (cachedData) {
-                    const { group: cachedGroup, joinRequests: cachedJoinRequests, role: cachedRole, isActive: cachedIsActive, isInGroup: cachedIsInGroup, myPosition: cachedMyPosition } = JSON.parse(cachedData);
+                    const { group: cachedGroup, pendingInvitees: cachedPendingInvitees, joinRequests: cachedJoinRequests, role: cachedRole, isActive: cachedIsActive, isInGroup: cachedIsInGroup, myPosition: cachedMyPosition } = JSON.parse(cachedData);
                     setGroup(cachedGroup);
+                    setPendingInvitees(cachedPendingInvitees || []);
                     setJoinRequests(cachedJoinRequests || []);
                     setRole(cachedRole);
                     setIsActive(cachedIsActive);
@@ -596,10 +606,12 @@ const GroupDetailsScreen = () => {
             );
 
             const g = res.data.data.group;
+            const invitees = res.data.data.pending_invitees || [];
             const requests = res.data.data.join_requests || [];
             // Only show pending join requests
             const pendingRequests = requests.filter((r: JoinRequest) => r.status.toLowerCase() === 'pending');
             setGroup(g);
+            setPendingInvitees(invitees);
             setJoinRequests(pendingRequests);
 
             const userStr = await AsyncStorage.getItem('user');
@@ -610,8 +622,6 @@ const GroupDetailsScreen = () => {
             let newRole = '';
             let newIsActive = false;
             let newIsInGroup = false;
-            
-            // If user is not in group yet, let them see the group and request to join
             let newMyPosition: number | null = null;
             if (pivot) {
                 newIsInGroup = true;
@@ -619,17 +629,18 @@ const GroupDetailsScreen = () => {
                 newIsActive = pivot.is_active;
                 newMyPosition = pivot.payout_position ?? null;
             }
-            
+
             setIsInGroup(newIsInGroup);
             setRole(newRole);
             setIsActive(newIsActive);
             setMyPosition(newMyPosition);
-            
+
             // Update cache
             lastFetchRef.current = Date.now();
             const cacheKey = `cache_group_${group_id}`;
             await AsyncStorage.setItem(cacheKey, JSON.stringify({
                 group: g,
+                pendingInvitees: invitees,
                 joinRequests: pendingRequests,
                 role: newRole,
                 isActive: newIsActive,
@@ -656,14 +667,15 @@ const GroupDetailsScreen = () => {
 
     const handleJoin = async () => {
         setJoining(true);
+        let endpoint = '';
         try {
             const token = await AsyncStorage.getItem('token');
             if (!token) { navigation.navigate('Signin'); return; }
 
             // Use different endpoint based on whether user is already in group (accepting invitation) or not (requesting to join)
-            const endpoint = isInGroup 
-                ? `${Constants.expoConfig?.extra?.apiUrl}/user/group/${group_id}/accept-invitation/`
-                : `${Constants.expoConfig?.extra?.apiUrl}/user/group/${group_id}/send-join-request/`;
+            endpoint = isInGroup 
+                ? `${Constants.expoConfig?.extra?.apiUrl}/user/group/${group_id}/accept-invitation`
+                : `${Constants.expoConfig?.extra?.apiUrl}/user/group/${group_id}/send-join-request`;
 
             await axios.get(endpoint, {
                 headers: {
@@ -684,23 +696,23 @@ const GroupDetailsScreen = () => {
             }
             loadGroup();
         } catch (err: any) {
-            const status = err?.response?.status;
+            const status: number | undefined = err?.response?.status;
             let errorMessage = 'Failed to join. Please try again.';
-            
-            // Handle different error types
-            if (status >= 500) {
-                errorMessage = 'Server is temporarily unavailable. Please try again later.';
-            } else if (status === 404) {
-                errorMessage = 'This group is no longer available.';
-            } else if (status === 401) {
+
+            if (status === 401) {
                 navigation.navigate('Signin');
                 return;
+            } else if (status === 404) {
+                errorMessage = 'This group is no longer available.';
+            } else if (typeof status === 'number' && status >= 500) {
+                errorMessage = 'Server is temporarily unavailable. Please try again later.';
+                console.error('Server error:', [err?.response?.data, status, err?.message, endpoint]);
             } else if (err?.response?.data?.message) {
                 errorMessage = err.response.data.message;
             } else if (!err?.response) {
                 errorMessage = 'Network error. Please check your connection.';
             }
-            
+
             Alert.alert('Error', errorMessage);
         } finally {
             setJoining(false);
@@ -708,7 +720,15 @@ const GroupDetailsScreen = () => {
     };
 
     // Handle accept join request
-    const handleAcceptRequest = async (requestId: number) => {
+    const handleAcceptRequest = async (requestId: string) => {
+        // Find the requester name for the modal title
+        const req = joinRequests.find(r => r.id === requestId);
+        setSelectedReplaceId(null);
+        setReplacePicker({ requestId, requesterName: req?.user_name ?? 'this user' });
+    };
+
+    const doApprove = async (requestId: string, replaceMemberId: string) => {
+        setApproving(true);
         setProcessingRequest({ id: requestId, action: 'accept' });
         try {
             const token = await AsyncStorage.getItem('token');
@@ -716,7 +736,7 @@ const GroupDetailsScreen = () => {
 
             await axios.put(
                 `${Constants.expoConfig?.extra?.apiUrl}/user/group/${group_id}/join-requests/${requestId}/approve`,
-                {},
+                { replace_member_id: replaceMemberId },
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -728,6 +748,7 @@ const GroupDetailsScreen = () => {
 
             // Remove from list immediately
             setJoinRequests(prev => prev.filter(r => r.id !== requestId));
+            setReplacePicker(null);
             Alert.alert('Success', 'Join request accepted successfully!');
             // Refresh data in background to update members list
             loadGroup(true);
@@ -738,16 +759,18 @@ const GroupDetailsScreen = () => {
                 errorMessage.toLowerCase().includes('already') ||
                 errorMessage.toLowerCase().includes('not found')) {
                 setJoinRequests(prev => prev.filter(r => r.id !== requestId));
+                setReplacePicker(null);
                 loadGroup(true); // Refresh to get latest state
             }
             Alert.alert('Notice', errorMessage || 'Failed to accept request. Please try again.');
         } finally {
             setProcessingRequest(null);
+            setApproving(false);
         }
     };
 
     // Handle decline join request
-    const handleDeclineRequest = async (requestId: number) => {
+    const handleDeclineRequest = async (requestId: string) => {
         Alert.alert(
             'Decline Request',
             'Are you sure you want to decline this join request?',
@@ -843,7 +866,7 @@ const GroupDetailsScreen = () => {
 
     const monthly = group.payable_amount
         ?? (group.total_users ? group.target_amount / group.total_users : 0);
-    const collected = monthly * (group.active_users_count ?? 0) * Math.max(group.current_month ?? 0, 0);
+    const collected = monthly * (group.active_members_count ?? 0) * Math.max(group.current_month ?? 0, 0);
     const pct = group.target_amount > 0
         ? Math.min(100, Math.round((collected / group.target_amount) * 100))
         : 0;
@@ -912,7 +935,7 @@ const GroupDetailsScreen = () => {
                         {/* Stats chips */}
                         <View style={styles.statsRow}>
                             <View style={styles.statChip}>
-                                <Text style={styles.statN}>{group.active_users_count ?? 0}</Text>
+                                <Text style={styles.statN}>{group.active_members_count ?? 0}</Text>
                                 <Text style={styles.statL}>Members</Text>
                             </View>
                             <View style={[styles.statChip, styles.statChipMid]}>
@@ -957,19 +980,19 @@ const GroupDetailsScreen = () => {
 
                     {/* ── Members ── */}
                     <Text style={styles.secLabel}>
-                        Members · {group.users.length} of {group.total_users}
+                        Members · {group.users.length + pendingInvitees.length} of {group.total_users}
                     </Text>
                     <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={styles.membersScroll}
                     >
-                        {group.users.length === 0 ? (
+                        {group.users.length === 0 && pendingInvitees.length === 0 ? (
                             <Text style={styles.emptyTxt}>No members yet!</Text>
                         ) : (
-                            group.users.map((user, i) => (
+                            [...group.users, ...pendingInvitees].map((user, i) => (
                                 <MemberCard
-                                    key={i}
+                                    key={user.id ?? i}
                                     user={user}
                                     payoutPosition={user.pivot.payout_position}
                                     canViewDetails={isInGroup}
@@ -1020,13 +1043,6 @@ const GroupDetailsScreen = () => {
                                 : <Text style={styles.btnPTxt}>{primaryBtnLabel}</Text>
                             }
                         </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.btnS}
-                            onPress={() => Alert.alert('Coming Soon', 'Invite feature is on its way!')}
-                            activeOpacity={0.85}
-                        >
-                            <Text style={styles.btnSTxt}>Invite member</Text>
-                        </TouchableOpacity>
                         {role.toLowerCase() === 'admin' && (
                             <TouchableOpacity
                                 style={[styles.btnS, { borderColor: 'rgba(0,214,143,0.35)', backgroundColor: 'rgba(0,214,143,0.08)' }]}
@@ -1044,6 +1060,77 @@ const GroupDetailsScreen = () => {
                     <View style={{ height: 32 }} />
                 </Animated.View>
             </ScrollView>
+
+            {/* ── Replace Member Picker Modal ── */}
+            <Modal
+                visible={!!replacePicker}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setReplacePicker(null)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalSheet}>
+                        <Text style={styles.modalTitle}>Select Member to Replace</Text>
+                        <Text style={styles.modalSub}>
+                            Approving <Text style={{ color: '#6eb5ff', fontWeight: '700' }}>{replacePicker?.requesterName}</Text> will replace the selected member
+                        </Text>
+
+                        <FlatList
+                            data={[
+                                    ...(group?.users.filter(u => u.pivot.role?.toLowerCase() !== 'admin') ?? []),
+                                    ...pendingInvitees.filter(u => u.pivot.role?.toLowerCase() !== 'admin'),
+                                ]}
+                            keyExtractor={item => item.id ?? item.email ?? ''}
+                            style={{ maxHeight: 320, marginBottom: 16 }}
+                            renderItem={({ item }) => {
+                                const isSelected = selectedReplaceId === item.id;
+                                return (
+                                    <TouchableOpacity
+                                        style={[styles.memberPickerRow, isSelected && styles.memberPickerRowSelected]}
+                                        onPress={() => setSelectedReplaceId(item.id ?? null)}
+                                        activeOpacity={0.75}
+                                    >
+                                        <View style={styles.memberPickerAvatar}>
+                                            <Text style={styles.memberPickerAvatarTxt}>{getInitials(item.name)}</Text>
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.memberPickerName}>{item.name || 'Unnamed'}</Text>
+                                            <Text style={styles.memberPickerEmail} numberOfLines={1}>{item.email}</Text>
+                                        </View>
+                                        <View style={[styles.memberPickerRadio, isSelected && styles.memberPickerRadioSelected]}>
+                                            {isSelected && <View style={styles.memberPickerRadioDot} />}
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            }}
+                        />
+
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity
+                                style={styles.modalCancelBtn}
+                                onPress={() => setReplacePicker(null)}
+                                disabled={approving}
+                            >
+                                <Text style={styles.modalCancelTxt}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.modalConfirmBtn, (!selectedReplaceId || approving) && { opacity: 0.5 }]}
+                                disabled={!selectedReplaceId || approving}
+                                onPress={() => {
+                                    if (replacePicker && selectedReplaceId) {
+                                        doApprove(replacePicker.requestId, selectedReplaceId);
+                                    }
+                                }}
+                            >
+                                {approving
+                                    ? <ActivityIndicator size="small" color="#0a1a0f" />
+                                    : <Text style={styles.modalConfirmTxt}>Approve & Replace</Text>
+                                }
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -1320,6 +1407,119 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
         textAlign: 'center',
         paddingVertical: 20,
+    },
+
+    // ── Replace member picker modal ──
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.65)',
+        justifyContent: 'flex-end',
+    },
+    modalSheet: {
+        backgroundColor: '#1a1a1a',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 24,
+        paddingBottom: 36,
+    },
+    modalTitle: {
+        fontSize: 17,
+        fontWeight: '700',
+        color: '#ffffff',
+        marginBottom: 6,
+    },
+    modalSub: {
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.5)',
+        marginBottom: 20,
+    },
+    memberPickerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingVertical: 12,
+        paddingHorizontal: 14,
+        borderRadius: 12,
+        marginBottom: 8,
+        backgroundColor: 'rgba(255,255,255,0.04)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.07)',
+    },
+    memberPickerRowSelected: {
+        borderColor: '#6eb5ff',
+        backgroundColor: 'rgba(110,181,255,0.08)',
+    },
+    memberPickerAvatar: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    memberPickerAvatarTxt: {
+        fontSize: 14,
+        fontWeight: '800',
+        color: '#ffffff',
+    },
+    memberPickerName: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#ffffff',
+        marginBottom: 2,
+    },
+    memberPickerEmail: {
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.45)',
+    },
+    memberPickerRadio: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        borderWidth: 2,
+        borderColor: 'rgba(255,255,255,0.3)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    memberPickerRadioSelected: {
+        borderColor: '#6eb5ff',
+    },
+    memberPickerRadioDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#6eb5ff',
+    },
+    modalActions: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 4,
+    },
+    modalCancelBtn: {
+        flex: 1,
+        paddingVertical: 14,
+        borderRadius: 12,
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.07)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    modalCancelTxt: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: 'rgba(255,255,255,0.7)',
+    },
+    modalConfirmBtn: {
+        flex: 2,
+        paddingVertical: 14,
+        borderRadius: 12,
+        alignItems: 'center',
+        backgroundColor: '#00d68f',
+    },
+    modalConfirmTxt: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#0a1a0f',
     },
 });
 

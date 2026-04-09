@@ -39,7 +39,7 @@ const P = {
 
 // ── API plan shape ─────────────────────────────────────────────────────────────
 interface ApiPlan {
-    id: number;
+    id: string;
     name: string;
     slug: string;
     tagline: string;
@@ -297,14 +297,14 @@ const PlanPickerScreen: React.FC = () => {
 
                 // Fetch plans list
                 const res = await axios.get<{ data: ApiPlan[] }>(`${apiUrl}/plans`, {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
                 });
 
                 // Also fetch dashboard to get the freshest active plan name
                 try {
                     const dashRes = await axios.get<{ user?: { plan?: string } }>(
-                        `${apiUrl}/dashboard`,
-                        { headers: { Authorization: `Bearer ${token}` } },
+                        `${apiUrl}/user/dashboard`,
+                        { headers: { Authorization: `Bearer ${token}`, Accept: "application/json" } },
                     );
                     const freshPlan = dashRes.data?.user?.plan;
                     console.log("fresh plan from dashboard:", freshPlan);

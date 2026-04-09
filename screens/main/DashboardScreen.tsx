@@ -37,12 +37,12 @@ type RootStackParamList = {
     Signup: undefined;
     Dashboard: undefined;
     CreateGroup: undefined;
-    GroupDetails: { group_id: number };
+    GroupDetails: { group_id: string };
     PlanPicker: undefined;
 };
 
 interface Group {
-    id: number;
+    id: string;
     title: string;
     target_amount: string;
     active_members: number;
@@ -794,7 +794,7 @@ const DashboardScreen: React.FC = () => {
     }, []);
 
     const handleGroupPress = useCallback(
-        (groupId: number) => {
+        (groupId: string) => {
             navigation.navigate("GroupDetails", { group_id: groupId });
         },
         [navigation],

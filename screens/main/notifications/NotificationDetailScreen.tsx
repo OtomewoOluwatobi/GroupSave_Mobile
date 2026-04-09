@@ -25,20 +25,20 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 type RootStackParamList = {
     NotificationDetail: { notification_id: string };
     Signin: undefined;
-    GroupDetails: { group_id: number };
+    GroupDetails: { group_id: string };
 };
 
 interface NotificationData {
     type?: string;
     title?: string;
     message?: string;
-    group_id?: number;
+    group_id?: string;
     group_title?: string;
     group_name?: string;
-    user_id?: number;
+    user_id?: string;
     user_name?: string;
     amount?: string;
-    join_request_id?: number;
+    join_request_id?: string;
     // Login notification specific fields
     ip_address?: string;
     user_agent?: string;

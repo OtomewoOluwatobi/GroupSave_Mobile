@@ -32,7 +32,7 @@ interface ApiNotification {
         type?: string;
         title?: string;
         message?: string;
-        group_id?: number;
+        group_id?: string;
         group_title?: string;
         group_name?: string;
         user_id?: number;
@@ -54,7 +54,7 @@ interface ApiNotification {
 interface Notification {
     id: string;
     type: string;
-    groupId: number | null;
+    groupId: string | null;
     title: string;
     body: string;
     icon: string;
@@ -87,7 +87,12 @@ const AVATAR_PALETTE = [
     { bg: 'rgba(0, 214, 143, 0.15)',   fg: '#00d68f' },
 ];
 
-const getAvatarColor = (id: number) => AVATAR_PALETTE[Math.abs(id || 0) % AVATAR_PALETTE.length] ?? AVATAR_PALETTE[0];
+const getAvatarColor = (id: string | number | null) => {
+    const n = typeof id === 'string'
+        ? id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
+        : (id || 0);
+    return AVATAR_PALETTE[Math.abs(n) % AVATAR_PALETTE.length] ?? AVATAR_PALETTE[0];
+};
 
 // ── Notification Type Config ──────────────────────────────────────────────────
 const NOTIF_TYPE_CONFIG: { [key: string]: { icon: string; color: string; colorSoft: string; cta: string } } = {
@@ -188,7 +193,7 @@ const NotifCard = ({
     onAction: (notif: Notification) => void;
 }) => {
     const fadeAnim = useRef(new Animated.Value(0)).current;
-    const col = getAvatarColor(notif.groupId ?? 0);
+    const col = getAvatarColor(notif.groupId ?? null);
 
     useEffect(() => {
         Animated.timing(fadeAnim, {
@@ -617,7 +622,7 @@ const NotificationsScreen = () => {
     const handleAction = (notif: Notification) => {
         markRead(notif.id);
         if (notif.groupId) {
-            navigation.navigate('GroupDetails', { groupId: notif.groupId });
+            navigation.navigate('GroupDetails', { group_id: notif.groupId });
         }
     };
 
