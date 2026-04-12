@@ -37,7 +37,7 @@ type RootStackParamList = {
     Signup: undefined;
     Dashboard: undefined;
     CreateGroup: undefined;
-    GroupDetails: { group_id: string };
+    GroupDetails: { group_id: string; initial_role?: string; initial_is_active?: boolean };
     PlanPicker: undefined;
 };
 
@@ -794,8 +794,12 @@ const DashboardScreen: React.FC = () => {
     }, []);
 
     const handleGroupPress = useCallback(
-        (groupId: string) => {
-            navigation.navigate("GroupDetails", { group_id: groupId });
+        (groupId: string, userRole?: string, isActive?: boolean) => {
+            navigation.navigate("GroupDetails", {
+                group_id: groupId,
+                initial_role: userRole,
+                initial_is_active: isActive,
+            });
         },
         [navigation],
     );
@@ -812,7 +816,7 @@ const DashboardScreen: React.FC = () => {
             <GroupCard
                 key={group.id}
                 group={group}
-                onPress={() => handleGroupPress(group.id)}
+                onPress={() => handleGroupPress(group.id, group.user_role, group.is_active)}
             />
         ));
     }, [topGroups, handleGroupPress]);
@@ -825,7 +829,7 @@ const DashboardScreen: React.FC = () => {
                         key={group.id}
                         group={group}
                         showStatus
-                        onPress={() => handleGroupPress(group.id)}
+                        onPress={() => handleGroupPress(group.id, group.user_role, group.is_active)}
                     />
                 ))}
                 <AddGroupButton onPress={handleCreateGroup} />

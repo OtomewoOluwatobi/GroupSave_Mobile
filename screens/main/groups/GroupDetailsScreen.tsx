@@ -87,7 +87,7 @@ interface GroupApiResponse {
 }
 
 type RootStackParamList = {
-    GroupDetails: { group_id: string };
+    GroupDetails: { group_id: string; initial_role?: string; initial_is_active?: boolean };
     Contribute: {
         group_id: string;
         group_title: string;
@@ -534,13 +534,13 @@ const CACHE_DURATION = 20 * 1000; // 20 seconds
 const GroupDetailsScreen = () => {
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
     const route = useRoute<RouteProp<RootStackParamList, 'GroupDetails'>>();
-    const { group_id } = route.params ?? { group_id: '' };
+    const { group_id, initial_role, initial_is_active } = route.params ?? { group_id: '' };
 
     const [group, setGroup] = React.useState<Group | null>(null);
     const [joinRequests, setJoinRequests] = React.useState<JoinRequest[]>([]);
-    const [role, setRole] = React.useState<string>('');
-    const [is_active, setIsActive] = React.useState<boolean>(false);
-    const [isInGroup, setIsInGroup] = React.useState<boolean>(false);
+    const [role, setRole] = React.useState<string>(initial_role ?? '');
+    const [is_active, setIsActive] = React.useState<boolean>(initial_is_active ?? false);
+    const [isInGroup, setIsInGroup] = React.useState<boolean>(!!initial_role);
     const [joining, setJoining] = React.useState<boolean>(false);
     const [myPosition, setMyPosition] = React.useState<number | null>(null);
     const [pendingInvitees, setPendingInvitees] = React.useState<GroupUser[]>([]);
