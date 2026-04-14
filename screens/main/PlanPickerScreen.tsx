@@ -463,6 +463,13 @@ const PlanPickerScreen: React.FC = () => {
                 end={{ x: 1, y: 1 }}
                 style={styles.header}
             >
+                <TouchableOpacity
+                    onPress={goToDashboard}
+                    style={styles.headerBackBtn}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                    <Text style={styles.headerBackArrow}>‹</Text>
+                </TouchableOpacity>
                 <View
                     style={[
                         styles.headerIcon,
@@ -590,6 +597,15 @@ const styles = StyleSheet.create({
         paddingVertical: 22,
         borderBottomWidth: 1,
         borderBottomColor: P.border,
+    },
+    headerBackBtn: {
+        marginRight: 2,
+    },
+    headerBackArrow: {
+        fontSize: 36,
+        color: P.text,
+        lineHeight: 40,
+        fontWeight: '300',
     },
     headerIcon: {
         width: 46,
