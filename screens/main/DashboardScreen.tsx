@@ -68,12 +68,26 @@ interface User {
     plan?: string;
 }
 
+interface GroupContribution {
+    id: string;
+    group_id: string;
+    cycle_number: number;
+    amount: string;
+    status: 'pending' | 'verified' | 'rejected';
+    submitted_at: string;
+    due_date: string;
+    note?: string | null;
+    user?: { name?: string; email?: string; points?: number };
+    group?: { title: string; target_amount?: string };
+}
+
 interface DashboardResponse {
     suggested_groups?: Group[];
     user_groups?: Group[];
     stats?: DashboardStats;
     user?: User;
-    plan?: string; // 'No active plan' or plan name e.g. 'Growth'
+    plan?: string;
+    group_contributions?: GroupContribution[];
 }
 
 interface StatCardConfig {
@@ -472,105 +486,121 @@ const TabHeader: React.FC<{
     );
 };
 
-const TransactionItem: React.FC<{
-    title: string;
-    date: string;
-    amount: string;
-    type: "credit" | "debit";
-    gradientColors: readonly [string, string];
-}> = ({ title, date, amount, type, gradientColors }) => (
-    <View style={[styles.transactionItem, shadowStyles]}>
-        <View style={styles.transactionDetails}>
-            <LinearGradient
-                colors={gradientColors}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.transactionIcon}
-            >
-                <Ionicons
-                    name={type === "credit" ? "arrow-down" : "arrow-up"}
-                    size={20}
-                    color={semanticColors.textInverse}
-                />
-            </LinearGradient>
-            <View style={styles.transactionText}>
-                <Text style={styles.transactionTitle}>{title}</Text>
-                <Text style={styles.transactionDate}>{date}</Text>
+const STATUS_COLORS: Record<string, string> = {
+    verified: '#00d68f',
+    pending:  '#f59e0b',
+    rejected: '#ef4444',
+};
+
+const STATUS_ICONS: Record<string, string> = {
+    verified: 'checkmark-circle',
+    pending:  'time',
+    rejected: 'close-circle',
+};
+
+function getInitials(name?: string): string {
+    if (!name) return '?';
+    const parts = name.trim().split(' ');
+    return parts.length >= 2
+        ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+        : parts[0].substring(0, 2).toUpperCase();
+}
+
+const AVATAR_GRADIENTS: Array<readonly [string, string]> = [
+    ['#00d68f', '#00bb7a'],
+    ['#6eb5ff', '#3a8fd1'],
+    ['#f59e0b', '#d97706'],
+    ['#a78bfa', '#7c3aed'],
+    ['#f87171', '#ef4444'],
+];
+
+function avatarGradient(name?: string): readonly [string, string] {
+    const code = (name ?? '').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    return AVATAR_GRADIENTS[code % AVATAR_GRADIENTS.length];
+}
+
+const ContributionCard: React.FC<{ contribution: GroupContribution }> = ({ contribution: c }) => {
+    const statusColor = STATUS_COLORS[c.status] ?? '#888';
+    const statusIcon  = STATUS_ICONS[c.status]  ?? 'ellipse-outline';
+    const initials    = getInitials(c.user?.name);
+    const grad        = avatarGradient(c.user?.name);
+    const submittedAt = new Date(c.submitted_at).toLocaleDateString('en-GB', {
+        day: 'numeric', month: 'short', year: 'numeric',
+    });
+    const dueDate = new Date(c.due_date).toLocaleDateString('en-GB', {
+        day: 'numeric', month: 'short',
+    });
+
+    return (
+        <View style={styles.contribCard}>
+
+            <View style={styles.contribInner}>
+                {/* Top row: avatar + info + amount */}
+                <View style={styles.contribTopRow}>
+                    {/* Avatar */}
+                    <LinearGradient colors={grad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.contribAvatar}>
+                        <Text style={styles.contribAvatarText}>{initials}</Text>
+                    </LinearGradient>
+
+                    {/* Middle info */}
+                    <View style={styles.contribInfo}>
+                        <Text style={styles.contribName} numberOfLines={1}>{c.user?.name ?? 'Contributor'}</Text>
+                        <Text style={styles.contribGroup} numberOfLines={1}>
+                            <Ionicons name="people-outline" size={11} color={semanticColors.textSecondary} />
+                            {'  '}{c.group?.title ?? 'Group'}
+                        </Text>
+                    </View>
+
+                    {/* Amount */}
+                    <View style={styles.contribAmountBlock}>
+                        <Text style={[styles.contribAmount, { color: statusColor }]}>
+                            +{formatCurrency(c.amount)}
+                        </Text>
+                        <Text style={styles.contribDue}>due {dueDate}</Text>
+                    </View>
+                </View>
+
+                {/* Bottom row: cycle badge + status pill + date */}
+                <View style={styles.contribBottomRow}>
+                    <View style={styles.contribCycleBadge}>
+                        <Text style={styles.contribCycleText}>Cycle {c.cycle_number}</Text>
+                    </View>
+
+                    <View style={[styles.contribStatusPill, { backgroundColor: statusColor + '1a', borderColor: statusColor + '44' }]}>
+                        <Ionicons name={statusIcon as any} size={11} color={statusColor} />
+                        <Text style={[styles.contribStatusText, { color: statusColor }]}>
+                            {c.status.charAt(0).toUpperCase() + c.status.slice(1)}
+                        </Text>
+                    </View>
+
+                    <Text style={styles.contribDate}>{submittedAt}</Text>
+                </View>
+
+                {/* Note (if present) */}
+                {c.note ? (
+                    <Text style={styles.contribNote} numberOfLines={1}>
+                        "{c.note}"
+                    </Text>
+                ) : null}
             </View>
         </View>
-        <Text
-            style={[
-                styles.transactionAmount,
-                {
-                    color:
-                        type === "credit" ? semanticColors.success : semanticColors.danger,
-                },
-            ]}
-        >
-            {type === "credit" ? "+" : "-"}
-            {amount}
-        </Text>
-    </View>
-);
-
-const TransactionsList: React.FC = () => {
-    const transactions = useMemo(
-        () => [
-            {
-                id: 1,
-                title: "Group Contribution",
-                date: "Oct 12, 2023",
-                amount: "£15,000.00",
-                type: "credit" as const,
-                colors: semanticColors.gradientPrimary,
-            },
-            {
-                id: 2,
-                title: "Monthly Payment",
-                date: "Oct 10, 2023",
-                amount: "£500.00",
-                type: "debit" as const,
-                colors: semanticColors.gradientSuccess,
-            },
-            {
-                id: 3,
-                title: "Payout Received",
-                date: "Sep 28, 2023",
-                amount: "£6,000.00",
-                type: "credit" as const,
-                colors: semanticColors.gradientWarning,
-            },
-            {
-                id: 4,
-                title: "Group Contribution",
-                date: "Sep 12, 2023",
-                amount: "£15,000.00",
-                type: "credit" as const,
-                colors: semanticColors.gradientPrimary,
-            },
-            {
-                id: 5,
-                title: "Monthly Payment",
-                date: "Sep 10, 2023",
-                amount: "£500.00",
-                type: "debit" as const,
-                colors: semanticColors.gradientSuccess,
-            },
-        ],
-        [],
     );
+};
+
+const TransactionsList: React.FC<{ contributions: GroupContribution[] }> = ({ contributions }) => {
+    if (contributions.length === 0) {
+        return (
+            <View style={styles.contribEmpty}>
+                <Ionicons name="receipt-outline" size={36} color={semanticColors.textSecondary} />
+                <Text style={styles.contribEmptyText}>No contributions yet</Text>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.transactionsList}>
-            {transactions.map((tx) => (
-                <TransactionItem
-                    key={tx.id}
-                    title={tx.title}
-                    date={tx.date}
-                    amount={tx.amount}
-                    type={tx.type}
-                    gradientColors={tx.colors}
-                />
+            {contributions.map((c) => (
+                <ContributionCard key={c.id} contribution={c} />
             ))}
         </View>
     );
@@ -597,6 +627,7 @@ const useDashboardData = (
     const [topGroups, setTopGroups] = useState<Group[]>([]);
     const [myGroups, setMyGroups] = useState<Group[]>([]);
     const [stats, setStats] = useState<DashboardStats | null>(null);
+    const [groupContributions, setGroupContributions] = useState<GroupContribution[]>([]);
     const [activePlanName, setActivePlanName] = useState<string>('No active plan');
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -617,10 +648,11 @@ const useDashboardData = (
                 if (userData) setUser(JSON.parse(userData));
                 
                 if (cachedData) {
-                    const { topGroups: cached_topGroups, myGroups: cached_myGroups, stats: cached_stats, plan: cached_plan } = JSON.parse(cachedData);
+                    const { topGroups: cached_topGroups, myGroups: cached_myGroups, stats: cached_stats, plan: cached_plan, group_contributions: cached_contributions } = JSON.parse(cachedData);
                     setTopGroups(cached_topGroups || []);
                     setMyGroups(cached_myGroups || []);
                     setStats(cached_stats || null);
+                    setGroupContributions(cached_contributions || []);
                     if (cached_plan) {
                         setActivePlanName(cached_plan);
                         const isFreePlan = FREE_PLAN_NAMES.includes(cached_plan.toLowerCase());
@@ -682,6 +714,7 @@ const useDashboardData = (
                     user_groups = [],
                     stats: dashboardStats = {},
                     user: apiUser = null,
+                    group_contributions = [],
                 } = response.data;
 
                 const planName: string = apiUser?.plan ?? 'No active plan';
@@ -689,6 +722,7 @@ const useDashboardData = (
                 setTopGroups(suggested_groups);
                 setMyGroups(user_groups);
                 setStats(dashboardStats);
+                setGroupContributions(group_contributions);
                 setActivePlanName(planName);
                 if (apiUser) setUser(apiUser);
 
@@ -710,7 +744,7 @@ const useDashboardData = (
                 // Cache the data for instant loading next time
                 await AsyncStorage.setItem(
                     CACHE_KEYS.DASHBOARD_DATA,
-                    JSON.stringify({ topGroups: suggested_groups, myGroups: user_groups, stats: dashboardStats, plan: planName })
+                    JSON.stringify({ topGroups: suggested_groups, myGroups: user_groups, stats: dashboardStats, plan: planName, group_contributions })
                 );
             } catch (error: any) {
                 if (error.response?.status === 401) {
@@ -752,12 +786,13 @@ const useDashboardData = (
         topGroups,
         myGroups,
         stats,
+        groupContributions,
         activePlanName,
         upgradeBannerVisible,
         dismissUpgradeBanner,
         loading,
         refreshing,
-        refetch: () => fetchData(true, true), // Force refresh on pull-to-refresh
+        refetch: () => fetchData(true, true),
         signOut,
     };
 };
@@ -775,6 +810,7 @@ const DashboardScreen: React.FC = () => {
         topGroups,
         myGroups,
         stats,
+        groupContributions,
         activePlanName,
         upgradeBannerVisible,
         dismissUpgradeBanner,
@@ -917,8 +953,11 @@ const DashboardScreen: React.FC = () => {
                     <Text style={[styles.sectionTitle, styles.boldText]}>
                         Recent Transactions
                     </Text>
+                    <Text style={styles.sectionSubtitle}>
+                        Your latest group contributions
+                    </Text>
 
-                    <TransactionsList />
+                    <TransactionsList contributions={groupContributions} />
 
                     {/* Bottom spacing */}
                     <View style={styles.bottomSpacer} />
@@ -1261,54 +1300,135 @@ const styles = StyleSheet.create({
     boldText: {
         fontWeight: "800",
     },
-
-    // Transactions
-    transactionsList: {
-        marginHorizontal: 5,
-        marginVertical: 10,
-        padding: 10,
+    sectionSubtitle: {
+        fontSize: 13,
+        color: semanticColors.textSecondary,
+        paddingHorizontal: 20,
+        marginTop: 2,
+        marginBottom: 4,
     },
-    transactionItem: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        paddingVertical: 16,
-        paddingHorizontal: 18,
-        marginBottom: 12,
+
+    // Transactions / Contributions
+    transactionsList: {
+        marginHorizontal: 20,
+        marginVertical: 10,
+        marginBottom: 6,
+        gap: 12,
+    },
+    contribCard: {
+        flexDirection: 'row',
         backgroundColor: semanticColors.containerBackground,
+        borderRadius: 18,
         borderWidth: 1,
         borderColor: semanticColors.borderLight,
-        borderRadius: 16,
+        overflow: 'hidden',
+        ...Platform.select({
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.14, shadowRadius: 10 },
+            android: { elevation: 4 },
+        }),
     },
-    transactionDetails: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 14,
+    contribInner: {
+        flex: 1,
+        paddingHorizontal: 14,
+        paddingVertical: 14,
+        gap: 10,
     },
-    transactionIcon: {
-        borderRadius: 14,
-        width: 50,
-        height: 50,
-        justifyContent: "center",
-        alignItems: "center",
+    contribTopRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    contribAvatar: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        alignItems: 'center',
+        justifyContent: 'center',
         flexShrink: 0,
     },
-    transactionText: {
-        marginLeft: 15,
-    },
-    transactionTitle: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: semanticColors.textPrimary,
-    },
-    transactionDate: {
-        color: semanticColors.textSecondary,
-        marginTop: 3,
-        fontSize: 11,
-    },
-    transactionAmount: {
+    contribAvatarText: {
+        color: '#fff',
         fontSize: 15,
-        fontWeight: "700",
+        fontWeight: '800',
+        letterSpacing: 0.5,
+    },
+    contribInfo: {
+        flex: 1,
+        gap: 3,
+    },
+    contribName: {
+        color: semanticColors.textPrimary,
+        fontSize: 14,
+        fontWeight: '700',
+        letterSpacing: 0.1,
+    },
+    contribGroup: {
+        color: semanticColors.textSecondary,
+        fontSize: 12,
+    },
+    contribAmountBlock: {
+        alignItems: 'flex-end',
+        gap: 2,
+    },
+    contribAmount: {
+        fontSize: 15,
+        fontWeight: '800',
+        letterSpacing: 0.2,
+    },
+    contribDue: {
+        fontSize: 10,
+        color: semanticColors.textSecondary,
+    },
+    contribBottomRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    contribCycleBadge: {
+        backgroundColor: 'rgba(110,181,255,0.12)',
+        borderRadius: 6,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderWidth: 1,
+        borderColor: 'rgba(110,181,255,0.25)',
+    },
+    contribCycleText: {
+        fontSize: 10,
+        fontWeight: '600',
+        color: '#6eb5ff',
+    },
+    contribStatusPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        borderRadius: 6,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderWidth: 1,
+    },
+    contribStatusText: {
+        fontSize: 10,
+        fontWeight: '700',
+    },
+    contribDate: {
+        fontSize: 10,
+        color: semanticColors.textSecondary,
+        marginLeft: 'auto',
+    },
+    contribNote: {
+        fontSize: 11,
+        color: semanticColors.textSecondary,
+        fontStyle: 'italic',
+        paddingTop: 2,
+    },
+    contribEmpty: {
+        alignItems: 'center',
+        paddingVertical: 32,
+        gap: 10,
+    },
+    contribEmptyText: {
+        color: semanticColors.textSecondary,
+        fontSize: 14,
     },
 
     // Empty State
