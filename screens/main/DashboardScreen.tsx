@@ -386,9 +386,31 @@ const AddGroupButton: React.FC<{ onPress: () => void }> = ({ onPress }) => (
     </TouchableOpacity>
 );
 
-const EmptyState: React.FC<{ message: string }> = ({ message }) => (
+const EmptyState: React.FC<{
+    message: string;
+    subtitle?: string;
+    iconName?: keyof typeof Ionicons.glyphMap;
+    actionLabel?: string;
+    onAction?: () => void;
+}> = ({ message, subtitle, iconName, actionLabel, onAction }) => (
     <View style={styles.noRecordContainer}>
-        <Text style={styles.noRecordText}>{message}</Text>
+        {iconName && (
+            <LG
+                colors={["#e8f5e9", "#c8e6c9"]}
+                style={styles.noRecordIconWrap}
+            >
+                <Ionicons name={iconName} size={28} color="#2e7d32" />
+            </LG>
+        )}
+        <Text style={styles.noRecordTitle}>{message}</Text>
+        {subtitle && (
+            <Text style={styles.noRecordSubtitle}>{subtitle}</Text>
+        )}
+        {actionLabel && onAction && (
+            <TouchableOpacity style={styles.noRecordAction} onPress={onAction} activeOpacity={0.8}>
+                <Text style={styles.noRecordActionText}>{actionLabel}</Text>
+            </TouchableOpacity>
+        )}
     </View>
 );
 
@@ -844,18 +866,15 @@ const DashboardScreen: React.FC = () => {
         navigation.navigate("CreateGroup");
     }, [navigation]);
 
-    const renderExploreGroups = useMemo(() => {
-        if (topGroups.length === 0) {
-            return <EmptyState message="No groups found" />;
-        }
-        return topGroups.map((group) => (
+    const exploreGroupCards = useMemo(() =>
+        topGroups.map((group) => (
             <GroupCard
                 key={group.id}
                 group={group}
                 onPress={() => handleGroupPress(group.id, group.user_role, group.is_active)}
             />
-        ));
-    }, [topGroups, handleGroupPress]);
+        ))
+    , [topGroups, handleGroupPress]);
 
     const renderMyGroups = useMemo(
         () => (
@@ -941,13 +960,23 @@ const DashboardScreen: React.FC = () => {
                     <View style={styles.groupsContainer}>
                         <TabHeader activeTab={activeTab} onTabChange={setActiveTab} />
 
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            style={styles.horizontalScroll}
-                        >
-                            {activeTab === "topGroups" ? renderExploreGroups : renderMyGroups}
-                        </ScrollView>
+                        {activeTab === "topGroups" && topGroups.length === 0 ? (
+                            <EmptyState
+                                message="No groups found"
+                                subtitle="There are no public groups available right now. Create one and invite others to join!"
+                                iconName="people-outline"
+                                actionLabel="Create a Group"
+                                onAction={handleCreateGroup}
+                            />
+                        ) : (
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                style={styles.horizontalScroll}
+                            >
+                                {activeTab === "topGroups" ? exploreGroupCards : renderMyGroups}
+                            </ScrollView>
+                        )}
                     </View>
 
                     <Text style={[styles.sectionTitle, styles.boldText]}>
@@ -1433,11 +1462,46 @@ const styles = StyleSheet.create({
 
     // Empty State
     noRecordContainer: {
-        justifyContent: "center",
         alignItems: "center",
-        paddingVertical: 22,
+        paddingVertical: 20,
+        paddingHorizontal: 20,
         width: "100%",
     },
+    noRecordIconWrap: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: 10,
+    },
+    noRecordTitle: {
+        fontSize: 14,
+        color: semanticColors.textPrimary,
+        textAlign: "center",
+        fontWeight: "600",
+        marginBottom: 4,
+    },
+    noRecordSubtitle: {
+        fontSize: 12,
+        color: semanticColors.textSecondary,
+        textAlign: "center",
+        lineHeight: 18,
+        marginBottom: 14,
+        alignSelf: "stretch",
+    },
+    noRecordAction: {
+        backgroundColor: semanticColors.buttonPrimary,
+        paddingHorizontal: 18,
+        paddingVertical: 8,
+        borderRadius: 16,
+    },
+    noRecordActionText: {
+        color: "#fff",
+        fontSize: 13,
+        fontWeight: "600",
+    },
+    /** @deprecated use noRecordTitle */
     noRecordText: {
         fontSize: 16,
         color: semanticColors.textSecondary,
