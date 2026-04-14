@@ -381,7 +381,7 @@ const PlanPickerScreen: React.FC = () => {
     };
 
     const goToDashboard = () =>
-        navigation.reset({ index: 0, routes: [{ name: "Dashboard" }] });
+        navigation.navigate("Dashboard");
 
     // ── Confirmation screen ────────────────────────────────────────────────────
     if (confirmed && activePlan) {
