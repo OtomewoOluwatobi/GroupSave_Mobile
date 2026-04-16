@@ -548,6 +548,8 @@ const GroupDetailsScreen = () => {
     const [replacePicker, setReplacePicker] = React.useState<{ requestId: string; requesterName: string } | null>(null);
     const [selectedReplaceId, setSelectedReplaceId] = React.useState<string | null>(null);
     const [approving, setApproving] = React.useState(false);
+    const [payoutSlots, setPayoutSlots] = React.useState<GroupUser[]>([]);
+    const [savingPayoutOrder, setSavingPayoutOrder] = React.useState(false);
     const [loading, setLoading] = React.useState<boolean>(true);
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
     const lastFetchRef = React.useRef<number>(0);
@@ -624,6 +626,13 @@ const GroupDetailsScreen = () => {
             // Only show pending join requests
             const pendingRequests = requests.filter((r: JoinRequest) => r.status.toLowerCase() === 'pending');
             setGroup(g);
+            setPayoutSlots([...g.users, ...invitees].sort((a, b) => {
+                // Active members first, then by assigned payout position
+                const activeA = a.pivot.is_active ? 0 : 1;
+                const activeB = b.pivot.is_active ? 0 : 1;
+                if (activeA !== activeB) return activeA - activeB;
+                return (a.pivot.payout_position ?? 0) - (b.pivot.payout_position ?? 0);
+            }));
             setPendingInvitees(invitees);
             setJoinRequests(pendingRequests);
 
@@ -834,6 +843,26 @@ const GroupDetailsScreen = () => {
         );
     };
 
+    // Save reordered payout slots to the API
+    const savePayoutOrder = async () => {
+        setSavingPayoutOrder(true);
+        try {
+            const token = await AsyncStorage.getItem('token');
+            if (!token) { navigation.navigate('Signin'); return; }
+            await axios.patch(
+                `${Constants.expoConfig?.extra?.apiUrl}/user/group/${group_id}/payout-order`,
+                { order: payoutSlots.map((u, i) => ({ user_id: u.id, position: i + 1 })) },
+                { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' } },
+            );
+            Alert.alert('Saved', 'Payout order updated successfully.');
+            loadGroup(true);
+        } catch (err: any) {
+            Alert.alert('Error', err?.response?.data?.message ?? 'Failed to save payout order.');
+        } finally {
+            setSavingPayoutOrder(false);
+        }
+    };
+
     // ── Loading state (only show full loading screen if no cached data) ──
     if (!group && loading) {
         return (
@@ -999,28 +1028,139 @@ const GroupDetailsScreen = () => {
                         )}
                     </View>
 
-                    {/* ── Members ── */}
-                    <Text style={styles.secLabel}>
-                        Members · {group.users.length + pendingInvitees.length} of {group.total_users}
-                    </Text>
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.membersScroll}
-                    >
-                        {group.users.length === 0 && pendingInvitees.length === 0 ? (
-                            <Text style={styles.emptyTxt}>No members yet!</Text>
-                        ) : (
-                            [...group.users, ...pendingInvitees].map((user, i) => (
-                                <MemberCard
-                                    key={user.id ?? i}
-                                    user={user}
-                                    payoutPosition={user.pivot.payout_position}
-                                    canViewDetails={isInGroup}
-                                />
-                            ))
-                        )}
-                    </ScrollView>
+                    {/* ── Members (non-admin view) ── */}
+                    {role.toLowerCase() !== 'admin' && (
+                        <>
+                            <Text style={styles.secLabel}>
+                                Members · {group.users.length + pendingInvitees.length} of {group.total_users}
+                            </Text>
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.membersScroll}
+                            >
+                                {group.users.length === 0 && pendingInvitees.length === 0 ? (
+                                    <Text style={styles.emptyTxt}>No members yet!</Text>
+                                ) : (
+                                    [...group.users, ...pendingInvitees]
+                                        .sort((a, b) => (b.pivot.is_active ? 1 : 0) - (a.pivot.is_active ? 1 : 0))
+                                        .map((user, i) => (
+                                            <MemberCard
+                                                key={user.id ?? i}
+                                                user={user}
+                                                payoutPosition={user.pivot.payout_position}
+                                                canViewDetails={isInGroup}
+                                            />
+                                        ))
+                                )}
+                            </ScrollView>
+                        </>
+                    )}
+
+                    {/* ── Payout Slot Order (Admin Only) ── */}
+                    {role.toLowerCase() === 'admin' && payoutSlots.length > 0 && (
+                        <View style={{ marginTop: 8 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 28, paddingBottom: 10 }}>
+                                <Text style={[styles.secLabel, { paddingHorizontal: 0, paddingTop: 0, paddingBottom: 0, flex: 1 }]}>
+                                    PAYOUT SLOT ORDER — {payoutSlots.length} MEMBERS
+                                </Text>
+                                <View style={{ backgroundColor: 'rgba(245,158,11,0.15)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)' }}>
+                                    <Text style={{ fontSize: 10, fontWeight: '700', color: '#f59e0b' }}>ADMIN ONLY</Text>
+                                </View>
+                            </View>
+                            <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', paddingHorizontal: 20, marginBottom: 12 }}>
+                                Tap arrows to reassign who receives the payout each month. Month 1 pays out first.
+                            </Text>
+                            <View style={[styles.detailsCard, { marginBottom: 4 }]}>
+                                {payoutSlots.map((user, index) => {
+                                    const isFirst = index === 0;
+                                    const isLast = index === payoutSlots.length - 1;
+                                    const isAdmin = user.pivot.role?.toLowerCase() === 'admin';
+                                    const isActive = user.pivot.is_active;
+                                    return (
+                                        <View
+                                            key={user.id ?? index}
+                                            style={{
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                paddingVertical: 14,
+                                                paddingHorizontal: 16,
+                                                borderBottomWidth: isLast ? 0 : 1,
+                                                borderBottomColor: 'rgba(255,255,255,0.07)',
+                                            }}
+                                        >
+                                            {/* Slot number */}
+                                            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: isFirst ? 'rgba(0,214,143,0.15)' : 'rgba(255,255,255,0.07)', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                                                <Text style={{ fontSize: 12, fontWeight: '700', color: isFirst ? '#00d68f' : 'rgba(255,255,255,0.5)' }}>{index + 1}</Text>
+                                            </View>
+                                            {/* Avatar */}
+                                            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: isAdmin ? 'rgba(110,181,255,0.15)' : 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                                                <Text style={{ fontSize: 14, fontWeight: '800', color: isAdmin ? '#6eb5ff' : '#ffffff' }}>{getInitials(user.name)}</Text>
+                                            </View>
+                                            {/* Info */}
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={{ fontSize: 14, fontWeight: '600', color: '#ffffff' }} numberOfLines={1}>{user.name || 'Unnamed'}</Text>
+                                                <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 1 }} numberOfLines={1}>{user.email}</Text>
+                                            </View>
+                                            {/* This month badge on first slot */}
+                                            {isFirst && (
+                                                <View style={{ backgroundColor: 'rgba(0,214,143,0.12)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginRight: 8, borderWidth: 1, borderColor: 'rgba(0,214,143,0.25)' }}>
+                                                    <Text style={{ fontSize: 10, fontWeight: '700', color: '#00d68f' }}>This month</Text>
+                                                </View>
+                                            )}
+                                            {/* Inactive badge */}
+                                            {!isActive && (
+                                                <View style={{ backgroundColor: 'rgba(239,68,68,0.12)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginRight: 8, borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)' }}>
+                                                    <Text style={{ fontSize: 10, fontWeight: '700', color: '#ef4444' }}>Inactive</Text>
+                                                </View>
+                                            )}
+                                            {/* Up / Down buttons */}
+                                            <View style={{ flexDirection: 'column', gap: 4 }}>
+                                                <TouchableOpacity
+                                                    onPress={() => {
+                                                        if (isFirst) return;
+                                                        const next = [...payoutSlots];
+                                                        [next[index], next[index - 1]] = [next[index - 1], next[index]];
+                                                        setPayoutSlots(next);
+                                                    }}
+                                                    disabled={isFirst}
+                                                    style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: isFirst ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}
+                                                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                                                >
+                                                    <Ionicons name="chevron-up" size={14} color={isFirst ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.8)'} />
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    onPress={() => {
+                                                        if (isLast) return;
+                                                        const next = [...payoutSlots];
+                                                        [next[index], next[index + 1]] = [next[index + 1], next[index]];
+                                                        setPayoutSlots(next);
+                                                    }}
+                                                    disabled={isLast}
+                                                    style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: isLast ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}
+                                                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                                                >
+                                                    <Ionicons name="chevron-down" size={14} color={isLast ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.8)'} />
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    );
+                                })}
+                            </View>
+                            {/* Save button */}
+                            <TouchableOpacity
+                                style={{ marginHorizontal: 16, marginTop: 10, paddingVertical: 13, borderRadius: 12, backgroundColor: '#00d68f', alignItems: 'center', justifyContent: 'center', opacity: savingPayoutOrder ? 0.65 : 1 }}
+                                onPress={savePayoutOrder}
+                                disabled={savingPayoutOrder}
+                                activeOpacity={0.85}
+                            >
+                                {savingPayoutOrder
+                                    ? <ActivityIndicator size="small" color="#0a1a0f" />
+                                    : <Text style={{ color: '#0a1a0f', fontSize: 14, fontWeight: '700' }}>Save Payout Order</Text>
+                                }
+                            </TouchableOpacity>
+                        </View>
+                    )}
 
                     {/* ── Pending Join Requests (Admin Only) ── */}
                     {role.toLowerCase() === 'admin' && joinRequests.length > 0 && (

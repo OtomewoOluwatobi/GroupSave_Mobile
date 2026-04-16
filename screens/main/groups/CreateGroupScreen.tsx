@@ -90,7 +90,8 @@ const STEPS = [
     { id: 1, label: 'Group Info', icon: 'wallet-outline' },
     { id: 2, label: 'Schedule', icon: 'calendar-outline' },
     { id: 3, label: 'Invite', icon: 'people-outline' },
-    { id: 4, label: 'Review', icon: 'checkmark-circle-outline' },
+    { id: 4, label: 'Payouts', icon: 'swap-vertical-outline' },
+    { id: 5, label: 'Review', icon: 'checkmark-circle-outline' },
 ];
 
 // ─── Form State Interface ─────────────────────────────────────────────────────
@@ -576,6 +577,7 @@ const CreateGroupScreen = () => {
     const [isSuccess, setIsSuccess] = useState(false);
     const [errors, setErrors] = useState<FormErrors>({});
     const [emailInput, setEmailInput] = useState('');
+    const [payoutOrder, setPayoutOrder] = useState<string[]>([]);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [userEmail, setUserEmail] = useState('');
 
@@ -730,12 +732,19 @@ const CreateGroupScreen = () => {
 
     const nextStep = () => {
         if (validateStep()) {
-            animateStep(Math.min(4, step + 1));
+            if (step === 3) {
+                // Seed payout order: admin (current user) first, then invited members
+                setPayoutOrder([userEmail, ...form.members_emails]);
+            }
+            animateStep(Math.min(5, step + 1));
         }
     };
 
     const prevStep = () => {
         setErrors({});
+        if (step === 5) {
+            setPayoutOrder([userEmail, ...form.members_emails]);
+        }
         animateStep(Math.max(1, step - 1));
     };
 
@@ -771,6 +780,7 @@ const CreateGroupScreen = () => {
                     payment_out_weekday: parseInt(form.payment_out_weekday),
                 }),
                 members_emails: form.members_emails,
+                payout_order: payoutOrder.map((email, i) => ({ email, position: i + 1 })),
             };
 
             const response = await fetch(`${apiUrl}/user/group/store`, {
@@ -869,6 +879,7 @@ const CreateGroupScreen = () => {
         setIsSuccess(false);
         setErrors({});
         setEmailInput('');
+        setPayoutOrder([]);
     };
 
     // ─── Success Screen ───────────────────────────────────────────────────────
@@ -1344,8 +1355,125 @@ const CreateGroupScreen = () => {
                             </View>
                         )}
 
-                        {/* ─── Step 4: Review ─── */}
+                        {/* ─── Step 4: Payouts ─── */}
                         {step === 4 && (
+                            <View>
+                                <View style={[styles.tipCard, { backgroundColor: 'rgba(110,181,255,0.06)' }]}>
+                                    <Ionicons name="swap-vertical-outline" size={18} color={D.accent} />
+                                    <Text style={styles.tipText}>
+                                        Set the payout order for{' '}
+                                        <Text style={{ color: D.accent, fontWeight: '700' }}>{form.title}</Text>.
+                                        {' '}Use the arrows to move members up or down. Month 1 pays out to Slot #1 first.
+                                    </Text>
+                                </View>
+
+                                {/* Header */}
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, paddingHorizontal: 4 }}>
+                                    <Text style={[styles.reviewCardLabel, { marginBottom: 0, flex: 1 }]}>
+                                        PAYOUT SLOT ORDER — {payoutOrder.length} MEMBERS
+                                    </Text>
+                                </View>
+
+                                {/* Slot rows */}
+                                <View style={[styles.reviewCard, { paddingHorizontal: 0 }]}>
+                                    {payoutOrder.map((email, index) => {
+                                        const isAdmin = email === userEmail;
+                                        const isFirst = index === 0;
+                                        const isLast = index === payoutOrder.length - 1;
+                                        const initials = email[0]?.toUpperCase() ?? '?';
+                                        const slotNum = index + 1;
+                                        return (
+                                            <View
+                                                key={email}
+                                                style={{
+                                                    flexDirection: 'row',
+                                                    alignItems: 'center',
+                                                    paddingVertical: 14,
+                                                    paddingHorizontal: 16,
+                                                    borderBottomWidth: isLast ? 0 : 1,
+                                                    borderBottomColor: 'rgba(255,255,255,0.07)',
+                                                }}
+                                            >
+                                                {/* Slot number badge */}
+                                                <View style={{
+                                                    width: 28, height: 28, borderRadius: 14,
+                                                    backgroundColor: isFirst ? D.accentSoft : 'rgba(255,255,255,0.08)',
+                                                    alignItems: 'center', justifyContent: 'center',
+                                                    marginRight: 12,
+                                                }}>
+                                                    <Text style={{ fontSize: 12, fontWeight: '700', color: isFirst ? D.accent : D.textSub }}>
+                                                        {slotNum}
+                                                    </Text>
+                                                </View>
+
+                                                {/* Avatar */}
+                                                <View style={{
+                                                    width: 36, height: 36, borderRadius: 18,
+                                                    backgroundColor: isAdmin ? D.accentSoft : 'rgba(255,255,255,0.08)',
+                                                    alignItems: 'center', justifyContent: 'center',
+                                                    marginRight: 12,
+                                                }}>
+                                                    <Text style={{ fontSize: 14, fontWeight: '800', color: isAdmin ? D.accent : D.text }}>
+                                                        {initials}
+                                                    </Text>
+                                                </View>
+
+                                                {/* Email + label */}
+                                                <View style={{ flex: 1 }}>
+                                                    <Text style={{ fontSize: 14, fontWeight: '600', color: D.text }} numberOfLines={1}>
+                                                        {email}{isAdmin ? ' (you)' : ''}
+                                                    </Text>
+                                                    <Text style={{ fontSize: 11, color: D.textMuted, marginTop: 1 }}>
+                                                        {isAdmin ? 'Admin' : 'Invited member'}
+                                                    </Text>
+                                                </View>
+
+                                                {/* Up / Down controls */}
+                                                <View style={{ flexDirection: 'column', gap: 4 }}>
+                                                    <TouchableOpacity
+                                                        onPress={() => {
+                                                            if (isFirst) return;
+                                                            const next = [...payoutOrder];
+                                                            [next[index], next[index - 1]] = [next[index - 1], next[index]];
+                                                            setPayoutOrder(next);
+                                                        }}
+                                                        disabled={isFirst}
+                                                        style={{
+                                                            width: 28, height: 28, borderRadius: 6,
+                                                            backgroundColor: isFirst ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.08)',
+                                                            alignItems: 'center', justifyContent: 'center',
+                                                        }}
+                                                        hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                                                    >
+                                                        <Ionicons name="chevron-up" size={14} color={isFirst ? D.textMuted : D.text} />
+                                                    </TouchableOpacity>
+                                                    <TouchableOpacity
+                                                        onPress={() => {
+                                                            if (isLast) return;
+                                                            const next = [...payoutOrder];
+                                                            [next[index], next[index + 1]] = [next[index + 1], next[index]];
+                                                            setPayoutOrder(next);
+                                                        }}
+                                                        disabled={isLast}
+                                                        style={{
+                                                            width: 28, height: 28, borderRadius: 6,
+                                                            backgroundColor: isLast ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.08)',
+                                                            alignItems: 'center', justifyContent: 'center',
+                                                        }}
+                                                        hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                                                    >
+                                                        <Ionicons name="chevron-down" size={14} color={isLast ? D.textMuted : D.text} />
+                                                    </TouchableOpacity>
+                                                </View>
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+                            </View>
+                        )}
+
+                        {/* ─── Step 5: Review ─── */}
+                        {step === 5 && (
                             <View>
                                 <View style={[styles.tipCard, { backgroundColor: 'rgba(0, 214, 143, 0.08)' }]}>
                                     <Ionicons name="search-outline" size={18} color={D.accent2} />
@@ -1454,12 +1582,12 @@ const CreateGroupScreen = () => {
                             )}
                             <TouchableOpacity
                                 style={[styles.nextButton, step === 1 && { flex: 1 }]}
-                                onPress={step < 4 ? nextStep : handleSubmit}
+                                onPress={step < 5 ? nextStep : handleSubmit}
                                 disabled={isSubmitting}
                                 activeOpacity={0.8}
                             >
                                 <LinearGradient
-                                    colors={step === 4 ? D.gradientSuccess : D.gradientAccent}
+                                    colors={step === 5 ? D.gradientSuccess : D.gradientAccent}
                                     style={styles.gradientButton}
                                     start={{ x: 0, y: 0 }}
                                     end={{ x: 1, y: 0 }}
@@ -1468,7 +1596,7 @@ const CreateGroupScreen = () => {
                                         <ActivityIndicator color="#fff" />
                                     ) : (
                                         <Text style={styles.buttonText}>
-                                            {step === 4 ? '🚀 Create Group' : 'Continue →'}
+                                            {step === 5 ? '🚀 Create Group' : 'Continue →'}
                                         </Text>
                                     )}
                                 </LinearGradient>
