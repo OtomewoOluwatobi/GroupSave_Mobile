@@ -6,6 +6,7 @@ import Toast, { BaseToast, BaseToastProps, ErrorToast } from 'react-native-toast
 import { AlertNotificationRoot } from 'react-native-alert-notification';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import SessionExpiryModal from './components/SessionExpiryModal';
 
@@ -139,7 +140,7 @@ const AppContent: React.FC = () => {
 
   return (
     <>
-      <View style={{ flex: 1 }}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
         <StatusBar barStyle="light-content" />
         <NavigationContainer
           ref={navigationRef}
@@ -227,7 +228,7 @@ const AppContent: React.FC = () => {
           </Stack.Navigator>
         </NavigationContainer>
         <Toast config={toastConfig} />
-      </View>
+      </GestureHandlerRootView>
 
       {/* Session Expiry Modal */}
       <SessionExpiryModal

@@ -21,6 +21,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
+import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { semanticColors } from '../../../theme/semanticColors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -863,6 +864,63 @@ const GroupDetailsScreen = () => {
         }
     };
 
+    const renderPayoutSlotItem = ({ item, drag, isActive, getIndex }: RenderItemParams<GroupUser>) => {
+        const index = getIndex() ?? 0;
+        const isFirst = index === 0;
+        const isItemAdmin = item.pivot.role?.toLowerCase() === 'admin';
+        const isItemActive = item.pivot.is_active;
+        return (
+            <ScaleDecorator>
+                <TouchableOpacity
+                    onLongPress={drag}
+                    delayLongPress={150}
+                    activeOpacity={1}
+                    style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        paddingVertical: 14,
+                        paddingHorizontal: 16,
+                        borderBottomWidth: 1,
+                        borderBottomColor: 'rgba(255,255,255,0.07)',
+                        backgroundColor: isActive ? 'rgba(255,255,255,0.05)' : 'transparent',
+                    }}
+                >
+                    {/* Drag handle — far left */}
+                    <Ionicons name="reorder-three" size={22} color="rgba(255,255,255,0.25)" style={{ marginRight: 12 }} />
+
+                    {/* Avatar */}
+                    <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: isItemAdmin ? 'rgba(110,181,255,0.15)' : 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                        <Text style={{ fontSize: 14, fontWeight: '800', color: isItemAdmin ? '#6eb5ff' : '#ffffff' }}>{getInitials(item.name)}</Text>
+                    </View>
+
+                    {/* Name + email */}
+                    <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 14, fontWeight: '600', color: '#ffffff' }} numberOfLines={1}>{item.name || 'Unnamed'}</Text>
+                        <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 1 }} numberOfLines={1}>{item.email}</Text>
+                    </View>
+
+                    {/* Status badges */}
+                    {isFirst && (
+                        <View style={{ backgroundColor: 'rgba(0,214,143,0.12)', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3, marginRight: 8, borderWidth: 1, borderColor: 'rgba(0,214,143,0.25)' }}>
+                            <Text style={{ fontSize: 10, fontWeight: '700', color: '#00d68f' }}>This month</Text>
+                        </View>
+                    )}
+                    {!isItemActive && (
+                        <View style={{ backgroundColor: 'rgba(239,68,68,0.12)', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3, marginRight: 8, borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)' }}>
+                            <Text style={{ fontSize: 10, fontWeight: '700', color: '#ef4444' }}>Inactive</Text>
+                        </View>
+                    )}
+
+                    {/* Slot number — far right */}
+                    <View style={{ alignItems: 'flex-end', minWidth: 36 }}>
+                        <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginBottom: 2 }}>SLOT</Text>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: isFirst ? '#00d68f' : 'rgba(255,255,255,0.6)' }}>#{index + 1}</Text>
+                    </View>
+                </TouchableOpacity>
+            </ScaleDecorator>
+        );
+    };
+
     // ── Loading state (only show full loading screen if no cached data) ──
     if (!group && loading) {
         return (
@@ -1069,83 +1127,16 @@ const GroupDetailsScreen = () => {
                                 </View>
                             </View>
                             <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', paddingHorizontal: 20, marginBottom: 12 }}>
-                                Tap arrows to reassign who receives the payout each month. Month 1 pays out first.
+                                Long-press a row to drag and reorder. Month 1 pays out first.
                             </Text>
                             <View style={[styles.detailsCard, { marginBottom: 4 }]}>
-                                {payoutSlots.map((user, index) => {
-                                    const isFirst = index === 0;
-                                    const isLast = index === payoutSlots.length - 1;
-                                    const isAdmin = user.pivot.role?.toLowerCase() === 'admin';
-                                    const isActive = user.pivot.is_active;
-                                    return (
-                                        <View
-                                            key={user.id ?? index}
-                                            style={{
-                                                flexDirection: 'row',
-                                                alignItems: 'center',
-                                                paddingVertical: 14,
-                                                paddingHorizontal: 16,
-                                                borderBottomWidth: isLast ? 0 : 1,
-                                                borderBottomColor: 'rgba(255,255,255,0.07)',
-                                            }}
-                                        >
-                                            {/* Slot number */}
-                                            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: isFirst ? 'rgba(0,214,143,0.15)' : 'rgba(255,255,255,0.07)', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                                                <Text style={{ fontSize: 12, fontWeight: '700', color: isFirst ? '#00d68f' : 'rgba(255,255,255,0.5)' }}>{index + 1}</Text>
-                                            </View>
-                                            {/* Avatar */}
-                                            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: isAdmin ? 'rgba(110,181,255,0.15)' : 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                                                <Text style={{ fontSize: 14, fontWeight: '800', color: isAdmin ? '#6eb5ff' : '#ffffff' }}>{getInitials(user.name)}</Text>
-                                            </View>
-                                            {/* Info */}
-                                            <View style={{ flex: 1 }}>
-                                                <Text style={{ fontSize: 14, fontWeight: '600', color: '#ffffff' }} numberOfLines={1}>{user.name || 'Unnamed'}</Text>
-                                                <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 1 }} numberOfLines={1}>{user.email}</Text>
-                                            </View>
-                                            {/* This month badge on first slot */}
-                                            {isFirst && (
-                                                <View style={{ backgroundColor: 'rgba(0,214,143,0.12)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginRight: 8, borderWidth: 1, borderColor: 'rgba(0,214,143,0.25)' }}>
-                                                    <Text style={{ fontSize: 10, fontWeight: '700', color: '#00d68f' }}>This month</Text>
-                                                </View>
-                                            )}
-                                            {/* Inactive badge */}
-                                            {!isActive && (
-                                                <View style={{ backgroundColor: 'rgba(239,68,68,0.12)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginRight: 8, borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)' }}>
-                                                    <Text style={{ fontSize: 10, fontWeight: '700', color: '#ef4444' }}>Inactive</Text>
-                                                </View>
-                                            )}
-                                            {/* Up / Down buttons */}
-                                            <View style={{ flexDirection: 'column', gap: 4 }}>
-                                                <TouchableOpacity
-                                                    onPress={() => {
-                                                        if (isFirst) return;
-                                                        const next = [...payoutSlots];
-                                                        [next[index], next[index - 1]] = [next[index - 1], next[index]];
-                                                        setPayoutSlots(next);
-                                                    }}
-                                                    disabled={isFirst}
-                                                    style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: isFirst ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}
-                                                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-                                                >
-                                                    <Ionicons name="chevron-up" size={14} color={isFirst ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.8)'} />
-                                                </TouchableOpacity>
-                                                <TouchableOpacity
-                                                    onPress={() => {
-                                                        if (isLast) return;
-                                                        const next = [...payoutSlots];
-                                                        [next[index], next[index + 1]] = [next[index + 1], next[index]];
-                                                        setPayoutSlots(next);
-                                                    }}
-                                                    disabled={isLast}
-                                                    style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: isLast ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}
-                                                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-                                                >
-                                                    <Ionicons name="chevron-down" size={14} color={isLast ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.8)'} />
-                                                </TouchableOpacity>
-                                            </View>
-                                        </View>
-                                    );
-                                })}
+                                <DraggableFlatList
+                                    data={payoutSlots}
+                                    keyExtractor={item => item.id ?? item.email ?? ''}
+                                    onDragEnd={({ data }) => setPayoutSlots(data)}
+                                    scrollEnabled={false}
+                                    renderItem={renderPayoutSlotItem}
+                                />
                             </View>
                             {/* Save button */}
                             <TouchableOpacity
