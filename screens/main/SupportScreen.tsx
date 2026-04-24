@@ -425,9 +425,10 @@ const Btn: React.FC<{
 interface HubProps {
   nav: (screen: ScreenType, ctx?: any) => void;
   insets: { top: number; bottom: number };
+  onBack: () => void;
 }
 
-const HubView: React.FC<HubProps> = ({ nav, insets }) => {
+const HubView: React.FC<HubProps> = ({ nav, insets, onBack }) => {
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const [categories, setCategories] = useState<Category[]>(CATEGORIES_FALLBACK);
@@ -505,6 +506,9 @@ const HubView: React.FC<HubProps> = ({ nav, insets }) => {
       <LinearGradient colors={['#161616', '#242424']} style={[styles.hubHeader, { paddingTop: insets.top + 16 }]}>
         <View style={styles.hubHeaderCircle1} />
         <View style={styles.hubHeaderCircle2} />
+        <TouchableOpacity onPress={onBack} style={styles.hubBackBtn} activeOpacity={0.75}>
+          <Ionicons name="chevron-back" size={18} color="rgba(255,255,255,0.7)" />
+        </TouchableOpacity>
         <Text style={styles.hubHeaderIcon}>🛟</Text>
 
         <Text style={styles.hubTitle}>Help & Support</Text>
@@ -1423,7 +1427,7 @@ const SupportScreen: React.FC = () => {
       <StatusBar barStyle="light-content" backgroundColor={D.bg} />
 
       {/* Hub is always rendered underneath */}
-      <HubView nav={nav} insets={insets} />
+      <HubView nav={nav} insets={insets} onBack={navigation.goBack} />
 
       <SlideIn visible={screen === 'category'}>
         {ctx.cat && (
@@ -1509,6 +1513,17 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
     position: 'relative',
     overflow: 'hidden',
+  },
+  hubBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 11,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    marginBottom: 12,
   },
   hubHeaderCircle1: {
     position: 'absolute',
