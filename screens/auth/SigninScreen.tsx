@@ -8,6 +8,7 @@ import {
   Platform,
   ScrollView,
   StatusBar,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
@@ -22,6 +23,7 @@ import { D } from '../../theme/tokens';
 import PrimaryButton from '../../components/PrimaryButton';
 import FloatingLabelInput from '../../components/FloatingLabelInput';
 import { useAuth } from '../../context/AuthContext';
+import { registerPushToken } from '../../utils/registerPushToken';
 
 
 type RootStackParamList = {
@@ -66,6 +68,9 @@ const SigninScreen: React.FC = () => {
         setIsAuthenticated(true);
         await setupExpirationTimer();
 
+        // Register push token in the background (non-blocking)
+        registerPushToken(response.data.token);
+
         // Check plan from dashboard endpoint (login response doesn't include plan)
         let hasPlan = !!response.data.user?.plan;
         if (!hasPlan) {
@@ -101,10 +106,11 @@ const SigninScreen: React.FC = () => {
       <LinearGradient colors={['#141414', D.bg]} style={styles.heroBanner}>
         <View style={styles.circle1} />
         <View style={styles.circle2} />
-        <View style={styles.emojiRing}>
-          <Text style={styles.heroEmoji}>🔐</Text>
-        </View>
-        <Text style={styles.appName}>{Constants.expoConfig?.extra?.appName}</Text>
+        <Image
+          source={require('../../assets/icon.png')}
+          style={styles.heroLogo}
+          resizeMode="contain"
+        />
         <Text style={styles.heroSubtitle}>Sign in to continue</Text>
       </LinearGradient>
 
@@ -205,21 +211,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
   },
-  emojiRing: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: 'rgba(0,214,143,0.12)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(0,214,143,0.35)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  heroLogo: {
+    width: 80,
+    height: 80,
+    borderRadius: 18,
     marginBottom: 14,
-    shadowColor: '#00d68f',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.45,
-    shadowRadius: 18,
-    elevation: 8,
   },
   circle1: {
     position: 'absolute',
@@ -238,15 +234,6 @@ const styles = StyleSheet.create({
     backgroundColor: D.accentGlow,
     bottom: 0,
     left: -30,
-  },
-  heroEmoji: {
-    fontSize: 40,
-  },
-  appName: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: D.textPrimary,
-    letterSpacing: -0.5,
   },
   heroSubtitle: {
     fontSize: 14,

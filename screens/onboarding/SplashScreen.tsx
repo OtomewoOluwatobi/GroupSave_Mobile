@@ -6,6 +6,7 @@ import {
   Animated,
   Dimensions,
   StatusBar,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
@@ -75,7 +76,11 @@ export default function SplashScreen() {
           colors={['#161616', '#00d68f1a']}
           style={styles.heroGradient}
         >
-          <Text style={styles.heroEmoji}>💰</Text>
+          <Image
+            source={require('../../assets/icon.png')}
+            style={styles.heroLogo}
+            resizeMode="contain"
+          />
           <View style={styles.heroOrbits}>
             <View style={[styles.orbit, { top: 10, right: 20 }]}>
               <Text style={styles.orbitEmoji}>👫</Text>
@@ -173,8 +178,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: D.accentGlow,
   },
-  heroEmoji: {
-    fontSize: 72,
+  heroLogo: {
+    width: 110,
+    height: 110,
+    borderRadius: 24,
   },
   heroOrbits: {
     position: 'absolute',

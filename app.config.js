@@ -32,10 +32,22 @@ export default {
     web: {
       favicon: './assets/favicon.png',
     },
+    plugins: [
+      [
+        'expo-notifications',
+        {
+          icon: './assets/icon.png',
+          color: '#00a97b',
+        },
+      ],
+    ],
     extra: {
       appName: process.env.APP_NAME || 'Rukuni',
       supportEmail: process.env.SUPPORT_EMAIL || 'support@rukuni.io',
       apiUrl: process.env.API_ROUTE || 'https://phplaravel-1549794-6263813.cloudwaysapps.com/api',
+      eas: {
+        projectId: process.env.EAS_PROJECT_ID || '',
+      },
     },
   },
 };

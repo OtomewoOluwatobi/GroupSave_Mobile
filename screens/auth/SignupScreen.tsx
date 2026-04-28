@@ -8,6 +8,7 @@ import {
   Platform,
   ScrollView,
   StatusBar,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
@@ -293,8 +294,11 @@ function SignupScreen() {
       <LinearGradient colors={['#141414', D.bg]} style={styles.heroBanner}>
         <View style={styles.circle1} />
         <View style={styles.circle2} />
-        <Text style={styles.heroEmoji}>✨</Text>
-        <Text style={styles.appName}>{Constants.expoConfig?.extra?.appName}</Text>
+        <Image
+          source={require('../../assets/icon.png')}
+          style={styles.heroLogo}
+          resizeMode="contain"
+        />
         <Text style={styles.heroSubtitle}>Create your account</Text>
       </LinearGradient>
 
@@ -467,15 +471,11 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: -30,
   },
-  heroEmoji: {
-    fontSize: 52,
+  heroLogo: {
+    width: 80,
+    height: 80,
+    borderRadius: 18,
     marginBottom: 8,
-  },
-  appName: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: D.textPrimary,
-    letterSpacing: -0.5,
   },
   heroSubtitle: {
     fontSize: 14,

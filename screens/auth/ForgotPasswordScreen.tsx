@@ -8,6 +8,7 @@ import {
   Platform,
   ScrollView,
   StatusBar,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
@@ -131,6 +132,11 @@ export default function ForgotPasswordScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={D.textPrimary} />
         </TouchableOpacity>
+        <Image
+          source={require('../../assets/icon.png')}
+          style={styles.headerLogo}
+          resizeMode="contain"
+        />
         <Text style={styles.headerTitle}>
           {step === 0 ? 'Forgot Password' : step === 1 ? 'Verify Code' : 'New Password'}
         </Text>
@@ -289,6 +295,11 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     letterSpacing: -0.2,
+  },
+  headerLogo: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
   },
   dotsRow: {
     alignItems: 'center',

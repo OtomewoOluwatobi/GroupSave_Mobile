@@ -9,6 +9,7 @@ import {
   StatusBar,
   FlatList,
   ListRenderItemInfo,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
@@ -123,13 +124,20 @@ export default function OnboardingScreen() {
     <View style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor={D.bg} />
 
-      {/* Skip */}
-      <TouchableOpacity
-        style={styles.skipBtn}
-        onPress={() => navigation.navigate('Signin')}
-      >
-        <Text style={styles.skipText}>Skip</Text>
-      </TouchableOpacity>
+      {/* Header: logo + skip */}
+      <View style={styles.header}>
+        <Image
+          source={require('../../assets/icon.png')}
+          style={styles.headerLogo}
+          resizeMode="contain"
+        />
+        <TouchableOpacity
+          style={styles.skipBtn}
+          onPress={() => navigation.navigate('Signin')}
+        >
+          <Text style={styles.skipText}>Skip</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Slides */}
       <FlatList
@@ -176,11 +184,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: D.bg,
   },
-  skipBtn: {
+  header: {
     position: 'absolute',
     top: 52,
+    left: 24,
     right: 24,
     zIndex: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerLogo: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+  },
+  skipBtn: {
     paddingVertical: 6,
     paddingHorizontal: 12,
     backgroundColor: D.surfaceCard,
