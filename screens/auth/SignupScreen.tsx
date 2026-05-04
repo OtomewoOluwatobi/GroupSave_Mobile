@@ -490,7 +490,9 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: D.surface,
     marginHorizontal: 20,
-    borderRadius: D.radiusLg,
+    borderRadius: D.radiusLg, 
+    borderLeftWidth: 3,
+    borderLeftColor: "#ffffff",
     padding: 24,
     marginBottom: 30,
     borderWidth: 1,

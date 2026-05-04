@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: D.border,
     borderLeftWidth: 3,
-    borderLeftColor: D.primary,
+    borderLeftColor: "#ffffff",
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25,
