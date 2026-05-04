@@ -295,7 +295,7 @@ function SignupScreen() {
         <View style={styles.circle1} />
         <View style={styles.circle2} />
         <Image
-          source={require('../../assets/icon.png')}
+          source={require('../../assets/logos/RUKUNI-LOGO-mobile-18.png')}
           style={styles.heroLogo}
           resizeMode="contain"
         />
@@ -448,9 +448,10 @@ const styles = StyleSheet.create({
     backgroundColor: D.bg,
   },
   heroBanner: {
-    paddingTop: 60,
+    paddingTop: 70,
     paddingBottom: 32,
     alignItems: 'center',
+    justifyContent: 'center',
     overflow: 'hidden',
   },
   circle1: {
@@ -472,9 +473,8 @@ const styles = StyleSheet.create({
     left: -30,
   },
   heroLogo: {
-    width: 80,
-    height: 80,
-    borderRadius: 18,
+    width: 130,
+    height: 130,
     marginBottom: 8,
   },
   heroSubtitle: {

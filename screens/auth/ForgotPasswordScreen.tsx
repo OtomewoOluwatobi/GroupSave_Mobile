@@ -133,14 +133,13 @@ export default function ForgotPasswordScreen() {
           <Ionicons name="arrow-back" size={22} color={D.textPrimary} />
         </TouchableOpacity>
         <Image
-          source={require('../../assets/icon.png')}
+          source={require('../../assets/logos/RUKUNI-LOGO-mobile-18.png')}
           style={styles.headerLogo}
           resizeMode="contain"
         />
         <Text style={styles.headerTitle}>
           {step === 0 ? 'Forgot Password' : step === 1 ? 'Verify Code' : 'New Password'}
         </Text>
-        <View style={{ width: 36 }} />
       </LinearGradient>
 
       {/* Progress dots */}
@@ -159,11 +158,6 @@ export default function ForgotPasswordScreen() {
           {/* ── Step 0: Email ── */}
           {step === 0 && (
             <>
-              <View style={styles.illustrationRow}>
-                <LinearGradient colors={['#222222', '#6eb5ff1e']} style={styles.illusCircle}>
-                  <Text style={styles.illusEmoji}>🔒</Text>
-                </LinearGradient>
-              </View>
               <Text style={styles.stepTitle}>Reset your password</Text>
               <Text style={styles.stepSubtitle}>
                 Enter the email address linked to your account and we'll send you a reset code.
@@ -189,11 +183,6 @@ export default function ForgotPasswordScreen() {
           {/* ── Step 1: OTP ── */}
           {step === 1 && (
             <>
-              <View style={styles.illustrationRow}>
-                <LinearGradient colors={['#222222', '#00d68f1e']} style={styles.illusCircle}>
-                  <Text style={styles.illusEmoji}>📨</Text>
-                </LinearGradient>
-              </View>
               <Text style={styles.stepTitle}>Enter the code</Text>
               <Text style={styles.stepSubtitle}>
                 We sent a 6-digit code to{' '}
@@ -219,11 +208,6 @@ export default function ForgotPasswordScreen() {
           {/* ── Step 2: New Password ── */}
           {step === 2 && (
             <>
-              <View style={styles.illustrationRow}>
-                <LinearGradient colors={['#222222', '#f59e0b1e']} style={styles.illusCircle}>
-                  <Text style={styles.illusEmoji}>🔑</Text>
-                </LinearGradient>
-              </View>
               <Text style={styles.stepTitle}>Create new password</Text>
               <Text style={styles.stepSubtitle}>
                 Choose a strong password you haven't used before.
@@ -273,14 +257,17 @@ const styles = StyleSheet.create({
     backgroundColor: D.bg,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 52,
-    paddingBottom: 20,
+    paddingTop: 70,
+    paddingBottom: 28,
     paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   backBtn: {
+    position: 'absolute',
+    top: 52,
+    left: 20,
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -291,15 +278,13 @@ const styles = StyleSheet.create({
     borderColor: D.border,
   },
   headerTitle: {
-    color: D.textPrimary,
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+    color: D.textSecondary,
+    fontSize: 14,
+    marginTop: 8,
   },
   headerLogo: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+    width: 130,
+    height: 130,
   },
   dotsRow: {
     alignItems: 'center',
@@ -308,23 +293,6 @@ const styles = StyleSheet.create({
   body: {
     paddingHorizontal: 28,
     paddingBottom: 50,
-  },
-  illustrationRow: {
-    alignItems: 'center',
-    marginBottom: 28,
-    marginTop: 10,
-  },
-  illusCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: D.border,
-  },
-  illusEmoji: {
-    fontSize: 52,
   },
   stepTitle: {
     fontSize: 22,

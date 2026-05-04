@@ -107,11 +107,10 @@ const SigninScreen: React.FC = () => {
         <View style={styles.circle1} />
         <View style={styles.circle2} />
         <Image
-          source={require('../../assets/icon.png')}
+          source={require('../../assets/logos/RUKUNI-LOGO-mobile-18.png')}
           style={styles.heroLogo}
           resizeMode="contain"
         />
-        <Text style={styles.heroSubtitle}>Sign in to continue</Text>
       </LinearGradient>
 
       {/* Form card */}
@@ -174,15 +173,6 @@ const SigninScreen: React.FC = () => {
                   <View style={styles.dividerLine} />
                 </View>
 
-                <TouchableOpacity style={styles.googleBtn} activeOpacity={0.8}>
-                  <View style={styles.googleBtnContent}>
-                    <View style={styles.googleGBadge}>
-                      <Text style={styles.googleGText}>G</Text>
-                    </View>
-                    <Text style={styles.googleBtnText}>Continue with Google</Text>
-                  </View>
-                </TouchableOpacity>
-
                 <Text style={styles.signupPrompt}>
                   Don't have an account?{' '}
                   <Text style={styles.signupLink} onPress={() => navigation.navigate('Signup')}>
@@ -206,16 +196,16 @@ const styles = StyleSheet.create({
     backgroundColor: D.bg,
   },
   heroBanner: {
-    paddingTop: 56,
-    paddingBottom: 40,
+    paddingTop: 70,
+    paddingBottom: 36,
     alignItems: 'center',
+    justifyContent: 'center',
     overflow: 'hidden',
   },
   heroLogo: {
-    width: 80,
-    height: 80,
-    borderRadius: 18,
-    marginBottom: 14,
+    width: 130,
+    height: 130,
+    marginBottom: 12,
   },
   circle1: {
     position: 'absolute',
@@ -234,11 +224,6 @@ const styles = StyleSheet.create({
     backgroundColor: D.accentGlow,
     bottom: 0,
     left: -30,
-  },
-  heroSubtitle: {
-    fontSize: 14,
-    color: D.textSecondary,
-    marginTop: 4,
   },
   cardWrapper: {
     flex: 1,
@@ -303,39 +288,6 @@ const styles = StyleSheet.create({
   dividerText: {
     color: D.textMuted,
     fontSize: 13,
-  },
-  googleBtn: {
-    height: 54,
-    borderRadius: D.radius,
-    borderWidth: 1.5,
-    borderColor: D.borderHi,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  googleBtnContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  googleGBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#4285F4',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  googleGText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  googleBtnText: {
-    color: D.textPrimary,
-    fontSize: 15,
-    fontWeight: '600',
   },
   signupPrompt: {
     textAlign: 'center',

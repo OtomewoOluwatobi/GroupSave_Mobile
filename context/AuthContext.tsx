@@ -50,9 +50,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [countdownSeconds, setCountdownSeconds] = useState(10);
   
   const navigationRef = useRef<NavigationContainerRef<any> | null>(null);
-  const tokenCheckInterval = useRef<NodeJS.Timeout | null>(null);
-  const countdownInterval = useRef<NodeJS.Timeout | null>(null);
-  const expirationTimeout = useRef<NodeJS.Timeout | null>(null);
+  const tokenCheckInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const countdownInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const expirationTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const appState = useRef(AppState.currentState);
   const setupExpirationTimerRef = useRef<() => Promise<void>>(async () => {});
 

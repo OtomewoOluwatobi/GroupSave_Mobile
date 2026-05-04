@@ -77,7 +77,7 @@ export default function SplashScreen() {
           style={styles.heroGradient}
         >
           <Image
-            source={require('../../assets/icon.png')}
+            source={require('../../assets/logos/RUKUNI-LOGO-mobile-18.png')}
             style={styles.heroLogo}
             resizeMode="contain"
           />
@@ -181,7 +181,6 @@ const styles = StyleSheet.create({
   heroLogo: {
     width: 110,
     height: 110,
-    borderRadius: 24,
   },
   heroOrbits: {
     position: 'absolute',

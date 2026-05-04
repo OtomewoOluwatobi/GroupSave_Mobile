@@ -127,7 +127,7 @@ export default function OnboardingScreen() {
       {/* Header: logo + skip */}
       <View style={styles.header}>
         <Image
-          source={require('../../assets/icon.png')}
+          source={require('../../assets/logos/RUKUNI-LOGO-mobile-18.png')}
           style={styles.headerLogo}
           resizeMode="contain"
         />
@@ -195,9 +195,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   headerLogo: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
+    width: 90,
+    height: 90,
   },
   skipBtn: {
     paddingVertical: 6,
